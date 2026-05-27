@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Zombie Mini Test</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <div id="start-menu">
+        <div id="start-panel">
+            <h1>開始遊戲</h1>
+            <button id="start-button">開始遊戲</button>
+            <button id="practice-start-button">練習模式</button>
+        </div>
+    </div>
+    <div id="class-select-menu" style="display:none;">
+        <div id="class-select-panel">
+            <h1>選擇職業</h1>
+            <div class="class-cards" id="class-list"></div>
+        </div>
+    </div>
+    <div id="game-over-menu" style="display:none;">
+        <div id="game-over-panel">
+            <h1>Game Over</h1>
+            <div id="game-over-time">生存時間: 0s</div>
+            <div id="game-over-kills">擊殺數: 0</div>
+            <div id="game-over-score">分數: 0</div>
+            <button id="restart-button">重新開始</button>
+        </div>
+    </div>
+
+    <div id="victory-menu" style="display:none;">
+        <div id="victory-panel">
+            <h1>Victory</h1>
+            <div id="victory-time">Survival Time: 0s</div>
+            <div id="victory-kills">Kills: 0</div>
+            <div id="victory-score">Score: 0</div>
+            <button id="victory-restart-button">Restart</button>
+            <button id="victory-main-button">Main Menu</button>
+        </div>
+    </div>
+
+    <div id="pause-menu" style="display:none;">
+        <div id="pause-panel">
+            <h1>Paused</h1>
+            <div>按 ESC 繼續遊戲</div>
+        </div>
+    </div>
+
+    <div id="practice-exit-menu" style="display:none;">
+        <div id="practice-exit-panel">
+            <h1>結束練習?</h1>
+            <div>返回主選單後，本次練習會結束</div>
+            <button id="practice-resume-button">繼續練習</button>
+            <button id="practice-return-button">返回主選單</button>
+        </div>
+    </div>
+
+    <div id="upgrade-menu" style="display:none;">
+        <div id="upgrade-panel">
+            <h1>升級選擇</h1>
+            <div class="upgrade-cards">
+                <button class="upgrade-card" id="upgrade-speed">
+                    <div class="card-title">腎上腺超載</div>
+                    <div class="card-desc">移動速度 +5</div>
+                </button>
+
+                <button class="upgrade-card" id="upgrade-damage">
+                    <div class="card-title">破顱打擊</div>
+                    <div class="card-desc">棍子傷害 +4</div>
+                </button>
+
+                <button class="upgrade-card" id="upgrade-range">
+                    <div class="card-title">加長握柄</div>
+                    <div class="card-desc">棍子長度 +15%</div>
+                </button>
+
+                <button class="upgrade-card" id="upgrade-attack-speed">
+                    <div class="card-title">狂躁節奏</div>
+                    <div class="card-desc">攻擊冷卻 -15%</div>
+                </button>
+
+                <button class="upgrade-card" id="upgrade-blood-rage">
+                    <div class="card-title">解鎖血怒狂暴</div>
+                    <div class="card-desc">解鎖 E 鍵短時間狂暴</div>
+                </button>
+
+                <button class="upgrade-card" id="upgrade-blood-step">
+                    <div class="card-title">解鎖血步突進</div>
+                    <div class="card-desc">解鎖 SPACE 鍵短距離朝滑鼠方向突進</div>
+                </button>
+
+                <button class="upgrade-card" id="upgrade-bone-breaker">
+                    <div class="card-title">解鎖裂骨重擊</div>
+                    <div class="card-desc">解鎖 R 鍵前方大範圍重砍，造成高傷害與擊退</div>
+                </button>
+
+                <button class="upgrade-card" id="upgrade-explosion">
+                    <div class="card-title">爆裂揮擊</div>
+                    <div class="card-desc">擊殺時產生小範圍爆炸</div>
+                </button>
+
+                <button class="upgrade-card" id="upgrade-explosion-power">
+                    <div class="card-title">爆燃強化</div>
+                    <div class="card-desc">爆炸傷害 +3，爆炸範圍 +8</div>
+                </button>
+
+                <button class="upgrade-card" id="upgrade-stretch">
+                    <div class="card-title">棍棒伸縮</div>
+                    <div class="card-desc">解鎖空白鍵攻擊，冷卻2s</div>
+                </button>
+
+                <button class="upgrade-card" id="upgrade-shockwave">
+                    <div class="card-title">衝擊震波</div>
+                    <div class="card-desc">解鎖 E 鍵震退周圍殭屍技能</div>
+                </button>
+
+                <button class="upgrade-card" id="upgrade-orbit">
+                    <div class="card-title">量子刃輪</div>
+                    <div class="card-desc">召喚量子刃輪，自動攻擊周圍敵人</div>
+                </button>
+
+            </div>
+        </div>
+    </div>
+    <div id="game-container">
+        <div id="practice-mode-hint" style="display:none;">
+            <div>練習模式</div>
+            <div>Ctrl + I：開關面板</div>
+        </div>
+
+        <div id="practice-panel" style="display:none;">
+            <div class="practice-panel-title">練習模式面板</div>
+            <div>目前選擇：<span id="practice-selected-enemy">普通殭屍</span></div>
+            <div class="practice-panel-help">
+                <div>Ctrl + I：開關面板</div>
+                <div>↑ / ↓：切換怪物</div>
+                <div>Enter：生成（尚未實作）</div>
+            </div>
+        </div>
+
+        <div id="phase-alert" style="display:none;">
+            <div id="phase-alert-title">感染擴散</div>
+            <div id="phase-alert-message">變異體活動增加</div>
+        </div>
+
+        <canvas id="game" width="960" height="640"></canvas>
+
+        <div id="hud">
+        
+            <!-- ============================= -->
+            <!-- Top -->
+            <!-- ============================= -->
+        
+            <div class="hud-top">
+        
+                <div class="hud-health-row">
+                    <div id="health" class="hud-health">
+                        100
+                    </div>
+        
+                    <div class="hud-hp-label">
+                        HP
+                    </div>
+                </div>
+        
+                <div class="hud-health-bar">
+                    <div id="health-bar-fill"></div>
+                </div>
+
+                <div class="hud-exp-bar">
+                    <div id="exp-bar-fill"></div>
+                </div>
+        
+                <div class="hud-meta">
+                    <div id="time">⏱️ 0s</div>
+                    <div id="kills">💀 0</div>
+                </div>
+        
+                <div id="level" class="hud-level">
+                    ✦ Lv. 1
+                </div>
+        
+            </div>
+        
+        
+            <div class="hud-divider"></div>
+        
+        
+            <!-- ============================= -->
+            <!-- 能力卡 -->
+            <!-- ============================= -->
+        
+            <div class="hud-block">
+            
+                <div class="hud-block-title">
+                    ✦ 能力卡
+                </div>
+            
+                <div id="trait-list" class="trait-grid">
+            
+                    <div id="slot-adrenaline" class="trait-slot empty">
+                        <div id="icon-adrenaline" class="trait-empty">✦</div>
+                        <div id="trait-adrenaline" class="trait-level">—</div>
+                    </div>
+            
+                    <div id="slot-skull-hit" class="trait-slot empty">
+                        <div id="icon-skull-hit" class="trait-empty">✦</div>
+                        <div id="trait-skull-hit" class="trait-level">—</div>
+                    </div>
+            
+                    <div id="slot-frenzy" class="trait-slot empty">
+                        <div id="icon-frenzy" class="trait-empty">✦</div>
+                        <div id="trait-frenzy" class="trait-level">—</div>
+                    </div>
+            
+                    <div id="slot-grip" class="trait-slot empty">
+                        <div id="icon-grip" class="trait-empty">✦</div>
+                        <div id="trait-grip" class="trait-level">—</div>
+                    </div>
+            
+            
+            
+                </div>
+            
+            </div>
+        
+        
+            <div class="hud-divider"></div>
+        
+        
+            <!-- ============================= -->
+            <!-- 技能 -->
+            <!-- ============================= -->
+        
+            <div class="hud-block">
+        
+                <div id="skill-title" class="hud-block-title">
+                    ✦ 技能
+                </div>
+        
+                <div id="skill-list" class="hud-block-content hidden">
+                    尚未習得技能
+                </div>
+
+                <div id="blood-execution-status" class="hud-skill-status passive">
+                    <div class="hud-skill-row">
+                        <span>血性處決</span>
+                        <span id="blood-execution-label">0%</span>
+                    </div>
+                    <div class="hud-skill-bar">
+                        <div id="blood-execution-fill"></div>
+                    </div>
+                </div>
+
+                <div id="blood-step-status" class="hud-skill-status">
+                    <div class="hud-skill-row">
+                        <span>SPACE｜血步</span>
+                        <span id="blood-step-label">未解鎖</span>
+                    </div>
+                    <div class="hud-skill-bar">
+                        <div id="blood-step-fill"></div>
+                    </div>
+                </div>
+
+                <div id="blood-rage-status" class="hud-skill-status ready">
+                    <div class="hud-skill-row">
+                        <span>E 血怒狂暴</span>
+                        <span id="blood-rage-label">可使用</span>
+                    </div>
+                    <div class="hud-skill-bar">
+                        <div id="blood-rage-fill"></div>
+                    </div>
+                </div>
+
+                <div id="bone-breaker-status" class="hud-skill-status">
+                    <div class="hud-skill-row">
+                        <span>R｜裂骨</span>
+                        <span id="bone-breaker-label">未解鎖</span>
+                    </div>
+                    <div class="hud-skill-bar">
+                        <div id="bone-breaker-fill"></div>
+                    </div>
+                </div>
+
+            </div>
+        
+        </div>
+    </div>
+
+    <script src="js/core.js"></script>
+    <script src="js/state.js"></script>
+
+    <script src="js/player.js"></script>
+    <script src="js/enemy.js"></script>
+    <script src="js/bot.js"></script>
+    <script src="js/upgrades.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/attack.js"></script>
+    <script src="js/effects.js"></script>
+    <script src="js/skills.js"></script>
+    <script src="js/draw.js"></script>
+
+    <script src="js/input.js"></script>
+    <script src="js/hud.js"></script>
+
+    <script src="js/main.js"></script>
+</body>
+
+</html>
