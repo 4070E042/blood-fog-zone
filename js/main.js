@@ -68,6 +68,8 @@ const healthPackInterval = 20;
 const floats = [];
 const corpseEffects = [];
 const bossSlamImpactEffects = [];
+const bossFrenzyPulseEffects = [];
+let bossFrenzyAlertTimer = 0;
 
 function resetGame() {
 
@@ -86,7 +88,7 @@ function resetGame() {
     // ================================
     // 分數 / 時間
     // ================================
-    survivalTime = 290;
+    survivalTime = 0;
     score = 0;
     killCount = 0;
 
@@ -218,6 +220,8 @@ function resetGame() {
     floats.length = 0;
     corpseEffects.length = 0;
     bossSlamImpactEffects.length = 0;
+    bossFrenzyPulseEffects.length = 0;
+    bossFrenzyAlertTimer = 0;
     deathEffects.length = 0;
 
 
@@ -333,6 +337,8 @@ practiceReturnButton.addEventListener('click', () => {
     floats.length = 0;
     corpseEffects.length = 0;
     bossSlamImpactEffects.length = 0;
+    bossFrenzyPulseEffects.length = 0;
+    bossFrenzyAlertTimer = 0;
     deathEffects.length = 0;
     explosions.length = 0;
 
@@ -378,6 +384,8 @@ function returnToMainMenuFromVictory() {
     floats.length = 0;
     corpseEffects.length = 0;
     bossSlamImpactEffects.length = 0;
+    bossFrenzyPulseEffects.length = 0;
+    bossFrenzyAlertTimer = 0;
     deathEffects.length = 0;
     explosions.length = 0;
 
@@ -655,6 +663,7 @@ function update(dt) {
     updateSkillCooldowns(dt);
     updateCorpseEffects(dt);
     updateBossSlamImpactEffects(dt);
+    updateBossFrenzyEffects(dt);
     updateBossHealthBar(dt);
 
 
@@ -1539,6 +1548,23 @@ function updateBossSlamImpactEffects(dt) {
     }
 }
 
+function updateBossFrenzyEffects(dt) {
+    if (bossFrenzyAlertTimer > 0) {
+        bossFrenzyAlertTimer =
+            Math.max(0, bossFrenzyAlertTimer - dt);
+    }
+
+    for (let i = bossFrenzyPulseEffects.length - 1; i >= 0; i--) {
+        const fx = bossFrenzyPulseEffects[i];
+
+        fx.timer -= dt;
+
+        if (fx.timer <= 0) {
+            bossFrenzyPulseEffects.splice(i, 1);
+        }
+    }
+}
+
 function updateBossHealthBar(dt) {
     const boss =
         enemies.find(en => en.type === 'boss' && en.hp > 0);
@@ -1696,6 +1722,81 @@ function drawBossSlamImpactEffects() {
     }
 }
 
+function drawBossFrenzyPulseEffects() {
+    for (const fx of bossFrenzyPulseEffects) {
+        const progress =
+            1 - Math.max(0, fx.timer) / fx.duration;
+        const alpha =
+            Math.max(0, 1 - progress);
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(180, 0, 28, 0.72)';
+        ctx.lineWidth = 5;
+        ctx.arc(
+            fx.x,
+            fx.y,
+            fx.radius + progress * 150,
+            0,
+            Math.PI * 2
+        );
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(40, 0, 0, 0.78)';
+        ctx.lineWidth = 9;
+        ctx.arc(
+            fx.x,
+            fx.y,
+            fx.radius * 0.75 + progress * 100,
+            0,
+            Math.PI * 2
+        );
+        ctx.stroke();
+
+        ctx.restore();
+    }
+}
+
+function drawBossFrenzyAlert() {
+    if (bossFrenzyAlertTimer <= 0) return;
+
+    const progress =
+        1 - bossFrenzyAlertTimer / 2.2;
+    const alpha =
+        Math.min(1, bossFrenzyAlertTimer / 0.35, 1 - progress * 0.35);
+    const pulse =
+        Math.sin(performance.now() * 0.025) * 0.08;
+
+    ctx.save();
+
+    ctx.fillStyle = `rgba(120, 0, 18, ${0.16 + pulse})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 42px sans-serif';
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+    ctx.fillStyle = `rgba(255, 55, 65, ${alpha})`;
+
+    ctx.strokeText(
+        '巨型屠夫狂暴化',
+        canvas.width / 2,
+        canvas.height * 0.34
+    );
+
+    ctx.fillText(
+        '巨型屠夫狂暴化',
+        canvas.width / 2,
+        canvas.height * 0.34
+    );
+
+    ctx.restore();
+}
+
 function startBossBasicAttack(en) {
     en.bossSkillState = 'basicWindup';
     en.bossBasicAttackTimer = bossBasicAttackWindupTime;
@@ -1801,7 +1902,16 @@ function updateBossBehavior(en, dt) {
         en.hp / en.maxHp <= 0.35
     ) {
         en.bossFrenzied = true;
-        screenShake = Math.max(screenShake, 12);
+        bossFrenzyAlertTimer = 2.2;
+        screenShake = Math.max(screenShake, 22);
+
+        bossFrenzyPulseEffects.push({
+            x: en.x,
+            y: en.y,
+            radius: en.radius,
+            timer: 0.9,
+            duration: 0.9
+        });
     }
 
     if (en.bossSlamCooldown > 0) {
@@ -1897,9 +2007,9 @@ function updateBossBehavior(en, dt) {
         return;
     }
 
-    const playerMovingAway =
-        playerMoveDir.x * nx + playerMoveDir.y * ny > 0.35;
+    const playerMovingAway = playerMoveDir.x * nx + playerMoveDir.y * ny > 0.35;
 
+    // 玩家進入重擊範圍且技能 CD 完成時，開始巨斧重擊前搖
     if (
         dist <= bossSlamRange + player.radius + 10 &&
         en.bossSlamCooldown <= 0
@@ -1908,6 +2018,7 @@ function updateBossBehavior(en, dt) {
         return;
     }
 
+    // 玩家正在拉開距離、位於中距離時，使用衝鋒踐踏逼位
     if (
         dist > bossSlamRange + 35 &&
         dist < 380 &&
@@ -2025,6 +2136,7 @@ function draw() {
     drawGroundCracks();
 
     drawBossSlamImpactEffects();
+    drawBossFrenzyPulseEffects();
 
     drawCorpseEffects();
 
@@ -2055,6 +2167,7 @@ function draw() {
     ctx.restore();
 
     drawBossHealthBar();
+    drawBossFrenzyAlert();
 
     drawFloatingTexts();
 }

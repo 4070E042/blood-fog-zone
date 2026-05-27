@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 簡短說明
 
 - 這是一個小型測試頁面，包含玩家移動與左上角 HUD（血量與生存時間）。
@@ -24,3 +25,7 @@
 注意
 
 - 本專案現包含敵人生成、敵人追擊、玩家揮棍攻擊、打擊/殭屍音效與 Game Over。 
+=======
+# blood-fog-zone
+A small zombie survival web game
+>>>>>>> 581bbf7948286c7ee5b66b567c9ea9ae54520749

@@ -147,16 +147,19 @@ function getEnemyStats(type) {
             ? 10
             : baseHp + Math.floor(Math.random() * 5) - 2;
 
+    const bossHp = 1000;
+
+
     const enemyHp =
         type === 'boss'
-            ? baseHp + 420
+            ? bossHp
             : type === 'leaper'
-            ? baseHp + 8 + Math.floor(survivalTime / 90) * 4
-            : type === 'burrower'
-                ? baseHp + 40 + Math.floor(survivalTime / 180) * 5
-                : type === 'screamer'
-                    ? baseHp + 28 + Math.floor(survivalTime / 120) * 6
-                    : Math.max(8, normalHp);
+                ? baseHp + 8 + Math.floor(survivalTime / 90) * 4
+                : type === 'burrower'
+                    ? baseHp + 40 + Math.floor(survivalTime / 180) * 5
+                    : type === 'screamer'
+                        ? baseHp + 28 + Math.floor(survivalTime / 120) * 6
+                        : Math.max(8, normalHp);
 
     return {
         speed: enemySpeed,
@@ -314,6 +317,7 @@ function spawnEnemy(allowSpecial = true) {
                 : type === 'screamer'
                     ? baseHp + 28 + Math.floor(survivalTime / 120) * 6
                     : Math.max(8, normalHp);
+
 
 
     // ================================

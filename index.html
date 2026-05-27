@@ -10,10 +10,28 @@
 
 <body>
     <div id="start-menu">
+        <div class="main-menu-scene" aria-hidden="true">
+            <div class="menu-fog menu-fog-a"></div>
+            <div class="menu-fog menu-fog-b"></div>
+            <div class="menu-grid-floor"></div>
+            <div class="menu-silhouette silhouette-a">
+                <span></span>
+            </div>
+            <div class="menu-silhouette silhouette-b">
+                <span></span>
+            </div>
+        </div>
+
         <div id="start-panel">
-            <h1>開始遊戲</h1>
-            <button id="start-button">開始遊戲</button>
-            <button id="practice-start-button">練習模式</button>
+            <img
+                class="main-menu-logo"
+                src="assets/images/logo.png"
+                alt="血霧禁區"
+            />
+            <div class="main-menu-actions">
+                <button id="start-button">開始遊戲</button>
+                <button id="practice-start-button">練習模式</button>
+            </div>
         </div>
     </div>
     <div id="class-select-menu" style="display:none;">

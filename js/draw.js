@@ -512,10 +512,27 @@ function drawEnemies() {
             if (en.bossFrenzied) {
                 ctx.save();
                 ctx.rotate(-bossAngle);
+
+                const pulse =
+                    Math.sin(performance.now() * 0.012) * 0.08;
+
                 ctx.beginPath();
-                ctx.fillStyle = 'rgba(150, 0, 18, 0.14)';
-                ctx.arc(0, 0, en.radius * 2.0, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(150, 0, 18, ${0.10 + pulse})`;
+                ctx.arc(0, 0, en.radius * 2.05, 0, Math.PI * 2);
                 ctx.fill();
+
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(95, 0, 12, 0.45)';
+                ctx.lineWidth = 4;
+                ctx.arc(
+                    0,
+                    0,
+                    en.radius * (2.25 + Math.abs(pulse) * 2.5),
+                    0,
+                    Math.PI * 2
+                );
+                ctx.stroke();
+
                 ctx.restore();
             }
 

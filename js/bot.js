@@ -154,8 +154,107 @@ function updateBotControl() {
         // ================================
 
         // Leaper 預備撲擊時，優先橫向閃避
+        let bossDanger = false;
+        let bossSlamDanger = false;
+        let bossChargeDanger = false;
+        let bossBasicDanger = false;
+        let bossChargePathDanger = false;
+        let bossSafeToAttack = true;
+        let bossMoveX = 0;
+        let bossMoveY = 0;
+
+        if (bossTarget) {
+            const bossDx = player.x - bossTarget.x;
+            const bossDy = player.y - bossTarget.y;
+            const bossLen = Math.hypot(bossDx, bossDy) || 1;
+            const bossNx = bossDx / bossLen;
+            const bossNy = bossDy / bossLen;
+            const bossState = bossTarget.bossSkillState || 'idle';
+
+            bossSlamDanger = bossState === 'slamWindup';
+            bossChargeDanger =
+                bossState === 'chargeWindup' ||
+                bossState === 'charging';
+            bossBasicDanger = bossState === 'basicWindup';
+
+            if (bossChargeDanger) {
+                const chargeDirX =
+                    bossTarget.bossChargeDirX ||
+                    Math.cos(bossTarget.bossSkillAngle || 0);
+                const chargeDirY =
+                    bossTarget.bossChargeDirY ||
+                    Math.sin(bossTarget.bossSkillAngle || 0);
+                const ahead =
+                    bossDx * chargeDirX + bossDy * chargeDirY;
+                const side =
+                    Math.abs(bossDx * -chargeDirY + bossDy * chargeDirX);
+                const chargeLength =
+                    Math.min(canvas.width, canvas.height) *
+                    bossChargeDistanceRatio;
+
+                bossChargePathDanger =
+                    ahead > -30 &&
+                    ahead < chargeLength + 80 &&
+                    side < bossTarget.radius + player.radius + 55;
+
+                const sideSign =
+                    bossDx * -chargeDirY + bossDy * chargeDirX >= 0
+                        ? 1
+                        : -1;
+
+                bossMoveX = -chargeDirY * sideSign;
+                bossMoveY = chargeDirX * sideSign;
+            } else if (bossSlamDanger || bossBasicDanger) {
+                const sideSign =
+                    bossDx * -bossNy + bossDy * bossNx >= 0
+                        ? 1
+                        : -1;
+
+                bossMoveX =
+                    (-bossNy * sideSign) * 0.75 +
+                    bossNx * 0.45;
+                bossMoveY =
+                    (bossNx * sideSign) * 0.75 +
+                    bossNy * 0.45;
+            } else if (bossTarget.bossFrenzied && bossDist < 230) {
+                bossMoveX = bossNx;
+                bossMoveY = bossNy;
+            }
+
+            bossDanger =
+                bossSlamDanger ||
+                bossChargeDanger ||
+                bossBasicDanger;
+
+            bossSafeToAttack =
+                !bossDanger &&
+                (
+                    !bossTarget.bossFrenzied ||
+                    bossDist > 105 ||
+                    player.health > 60
+                );
+        }
+
         const tooClose =
             nearestDist < player.radius + nearest.radius + 18;
+
+        const bossStepDanger =
+            bossTarget &&
+            (
+                (
+                    bossSlamDanger &&
+                    bossDist < bossSlamRange + player.radius + 10
+                ) ||
+                (
+                    bossBasicDanger &&
+                    bossDist < bossTarget.radius + bossBasicAttackRange + player.radius
+                ) ||
+                bossChargePathDanger ||
+                (
+                    bossTarget.bossFrenzied &&
+                    bossDist < 95
+                )
+            );
 
         const shouldBloodStep =
             (
@@ -164,28 +263,40 @@ function updateBotControl() {
             ) ||
             tooClose ||
             burrowDanger ||
-            attackWarningDanger;
+            attackWarningDanger ||
+            bossStepDanger;
 
         if (
             shouldBloodStep &&
             bloodStepUnlocked &&
             bloodStepCooldownTimer <= 0
         ) {
-            mouse.x = player.x + (awayX / len) * 200;
-            mouse.y = player.y + (awayY / len) * 200;
+            if (bossStepDanger && bossTarget) {
+                const stepLen = Math.hypot(bossMoveX, bossMoveY) || 1;
+
+                mouse.x = player.x + (bossMoveX / stepLen) * 220;
+                mouse.y = player.y + (bossMoveY / stepLen) * 220;
+            } else {
+                mouse.x = player.x + (awayX / len) * 200;
+                mouse.y = player.y + (awayY / len) * 200;
+            }
 
             activateBloodStep();
         }
 
         const shouldBloodRage =
-            nearbyCount >= 4 ||
+            !bossDanger &&
+            player.health > 45 &&
             (
-                nearest.type === 'boss' &&
-                nearestDist < 180
-            ) ||
-            (
-                player.health <= 55 &&
-                nearbyCount >= 2
+                nearbyCount >= 4 ||
+                (
+                    nearest.type === 'boss' &&
+                    nearestDist < 180
+                ) ||
+                (
+                    player.health <= 55 &&
+                    nearbyCount >= 2
+                )
             );
 
         if (
@@ -204,6 +315,7 @@ function updateBotControl() {
         const shouldBoneBreaker =
             !shouldBloodStep &&
             !leaperPrepDanger &&
+            bossSafeToAttack &&
             (
                 nearestDist <= boneBreakerRange + nearest.radius ||
                 nearbyCount >= 4 ||
@@ -231,6 +343,28 @@ function updateBotControl() {
         }
 
         if (
+            bossTarget &&
+            bossDanger &&
+            (
+                nearest.type === 'boss' ||
+                bossDist < 260
+            )
+        ) {
+            const bossMoveLen = Math.hypot(bossMoveX, bossMoveY) || 1;
+
+            dx = bossMoveX / bossMoveLen;
+            dy = bossMoveY / bossMoveLen;
+
+        } else if (
+            bossTarget &&
+            bossTarget.bossFrenzied &&
+            nearest.type === 'boss' &&
+            bossDist < player.radius + stickRange + 95
+        ) {
+            dx = awayX / len;
+            dy = awayY / len;
+
+        } else if (
             nearest.type === 'leaper' &&
             nearest.preLeapTimer > 0
         ) {
@@ -301,7 +435,11 @@ function updateBotControl() {
             !isSwinging &&
             attackCooldown <= 0 &&
             nearestDist <= player.radius + stickRange + 35 &&
-            !(nearest.type === 'leaper' && nearest.preLeapTimer > 0)
+            !(nearest.type === 'leaper' && nearest.preLeapTimer > 0) &&
+            (
+                nearest.type !== 'boss' ||
+                bossSafeToAttack
+            )
         ) {
 
             isSwinging = true;

@@ -3,7 +3,7 @@
 // ================================
 const PLAYER_BASE = {
     speed: 100,
-    health: 1000,
+    health: 100,
     radius: 16
 };
 
