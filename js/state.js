@@ -124,6 +124,8 @@ let attackSpeedLevel = 0;
 let rangeLevel = 0;
 
 const TRAIT_MAX_LEVEL = 3;
+const rangeBonusByLevel = [0, 10, 7, 5];
+const attackSpeedBonusByLevel = [0, 0.9, 0.85, 0.8];
 
 // 升級特效
 let upgradeEffectTimer = 0;
@@ -178,6 +180,7 @@ let explosionEnabled = false;
 let explosionLevel = 0;
 let explosionRadius = 70;
 let explosionDamage = 4;
+let explosionChance = 0.35;
 
 const explosions = [];
 
@@ -239,7 +242,7 @@ const bloodExecutionGainOnHit = 10;
 const bloodExecutionDecayRate = 18;
 
 // 脫離戰鬥後幾秒才開始衰退
-const bloodExecutionCombatGrace = 3.0;
+const bloodExecutionCombatGrace = 2.4;
 
 // 滿血決時最大攻速加成
 const bloodExecutionAttackSpeedBonus = 0.18;

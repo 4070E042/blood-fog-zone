@@ -71,6 +71,26 @@ const bossSlamImpactEffects = [];
 const bossFrenzyPulseEffects = [];
 let bossFrenzyAlertTimer = 0;
 
+function triggerGameOver() {
+
+    if (isGameOver) return;
+
+    isGameOver = true;
+    gameStarted = false;
+
+    gameOverMenu.style.display = 'flex';
+
+    canvas.style.cursor = 'auto';
+
+    document.body.classList.remove('game-playing');
+
+    gameOverTime.textContent = `生存時間: ${Math.floor(survivalTime)}s`;
+    gameOverKills.textContent = `擊殺數: ${killCount}`;
+    gameOverScore.textContent = `分數: ${score}`;
+
+    playDeathSound();
+}
+
 function resetGame() {
 
     // ================================
@@ -183,6 +203,10 @@ function resetGame() {
     boneBreakerCooldownTimer = 0;
     boneBreakerWindupTimer = 0;
     boneBreakerPending = null;
+    explosionEnabled = false;
+    explosionLevel = 0;
+    explosionRadius = 70;
+    explosionDamage = 4;
 
     bloodExecutionValue = 0;
     bloodExecutionWasFull = false;
@@ -467,8 +491,7 @@ let last = performance.now();
 
 function update(dt) {
     // ================================
-    // 遊戲停止狀態
-    // 遊戲結束 / 暫停 / 升級時停止更新
+    // 更新停止條件
     // ================================
     if (
         !gameStarted ||
@@ -482,9 +505,8 @@ function update(dt) {
         return;
     }
 
-
     // ================================
-    // 升級特效計時
+    // 畫面與升級特效
     // ================================
     if (upgradeEffectTimer > 0) {
         upgradeEffectTimer = Math.max(0, upgradeEffectTimer - dt);
@@ -492,118 +514,22 @@ function update(dt) {
 
 
     // ================================
-    // 玩家移動輸入
+    // 玩家輸入與移動
     // ================================
-    let dx = 0, dy = 0;
+    const moveInput = updatePlayerInput();
 
-    if (botMode) {
-
-        // Bot 自動控制
-        const botMove = updateBotControl();
-
-        dx = botMove.dx;
-        dy = botMove.dy;
-
-    } else {
-
-        // 玩家鍵盤移動
-        if (!player.isBound) {
-
-            if (keys['ArrowUp'] || keys['w'] || keys['W']) dy -= 1;
-            if (keys['ArrowDown'] || keys['s'] || keys['S']) dy += 1;
-            if (keys['ArrowLeft'] || keys['a'] || keys['A']) dx -= 1;
-            if (keys['ArrowRight'] || keys['d'] || keys['D']) dx += 1;
-        }
-    }
+    updatePlayerMovement(dt, moveInput.dx, moveInput.dy);
+    updatePlayerPositionClamp();
 
 
     // ================================
-    // 緩速效果
+    // 玩家狀態效果
     // ================================
-    if (player.slowTimer > 0) {
-
-        player.slowTimer = Math.max(0, player.slowTimer - dt);
-
-        if (player.slowTimer <= 0) {
-            player.slowMultiplier = 1;
-        }
-    }
+    updatePlayerStatusEffects(dt);
 
 
     // ================================
-    // 受傷加速效果
-    // ================================
-    if (player.speedBoostTimer > 0) {
-
-        player.speedBoostTimer = Math.max(0, player.speedBoostTimer - dt);
-
-        if (player.speedBoostTimer <= 0) {
-            player.speedBoostMultiplier = 1;
-        }
-    }
-
-
-    // ================================
-    // 玩家移動
-    // ================================
-    if (dx !== 0 || dy !== 0) {
-
-        const len = Math.hypot(dx, dy) || 1;
-
-        dx /= len;
-        dy /= len;
-
-        playerMoveDir.x = dx;
-        playerMoveDir.y = dy;
-
-        const boneBreakerMoveScale =
-            boneBreakerPending && boneBreakerWindupTimer > 0
-                ? boneBreakerMoveMultiplier
-                : 1;
-
-        const currentSpeed =
-            player.speed *
-            player.slowMultiplier *
-            player.speedBoostMultiplier *
-            boneBreakerMoveScale;
-
-        player.x += dx * currentSpeed * dt;
-        player.y += dy * currentSpeed * dt;
-    }
-
-
-    // ================================
-    // 玩家擊退位移
-    // ================================
-    player.x += player.knockbackX * dt;
-    player.y += player.knockbackY * dt;
-
-
-    // ================================
-    // 擊退衰減
-    // ================================
-    player.knockbackX *= 0.84;
-    player.knockbackY *= 0.84;
-
-
-    // ================================
-    // 限制玩家在畫面內
-    // ================================
-    player.x =
-        Math.max(
-            player.radius,
-            Math.min(canvas.width - player.radius, player.x)
-        );
-
-    player.y =
-        Math.max(
-            player.radius,
-            Math.min(canvas.height - player.radius, player.y)
-        );
-
-
-    // ================================
-    // 生存時間
+    // 生存時間與 Boss 流程
     // ================================
     survivalTime += dt;
     updateThreatPhase(dt);
@@ -713,27 +639,18 @@ function update(dt) {
 
 
     const enemiesBeforeSpawn = enemies.length;
-    // spawn enemies periodically
+    // 怪物生成節奏
     spawnTimer += dt;
-    let currentSpawnInterval;
-
-    if (survivalTime < 60) {
-        currentSpawnInterval = 1.8 - survivalTime * 0.004;
-    } else if (survivalTime < 150) {
-        currentSpawnInterval = 1.56 - (survivalTime - 60) * 0.004;
-    } else if (survivalTime < 240) {
-        currentSpawnInterval = 1.2 - (survivalTime - 150) * 0.0039;
-    } else {
-        currentSpawnInterval = Math.max(0.65, 0.85 - (survivalTime - 240) * 0.0033);
-    }
+    let currentSpawnInterval = getCurrentSpawnInterval();
 
     updateHealthPackSpawn(dt);
 
-    // 怪物生產時間
+    // 怪物生產
     if (!isPracticeMode && !bossSpawned && spawnTimer >= currentSpawnInterval) {
         spawnTimer -= currentSpawnInterval;
         spawnEnemy();
     }
+
     const enemyCountIncreased = enemies.length > enemiesBeforeSpawn;
     let closeZombieNearPlayer = false;
 
@@ -1264,32 +1181,7 @@ function update(dt) {
 
     }
 
-    // simple enemy separation: prevent zombies stacking into one ball
-    for (let i = 0; i < enemies.length; i++) {
-        for (let j = i + 1; j < enemies.length; j++) {
-            const a = enemies[i];
-            const b = enemies[j];
-
-            if (a.type === 'burrower' && a.burrowState === 'burrowing') continue;
-            if (b.type === 'burrower' && b.burrowState === 'burrowing') continue;
-
-            const dx = b.x - a.x;
-            const dy = b.y - a.y;
-            const dist = Math.hypot(dx, dy) || 1;
-            const minDist = a.radius + b.radius - 4;
-
-            if (dist < minDist) {
-                const push = (minDist - dist) * 0.25;
-                const nx = dx / dist;
-                const ny = dy / dist;
-
-                a.x -= nx * push;
-                a.y -= ny * push;
-                b.x += nx * push;
-                b.y += ny * push;
-            }
-        }
-    }
+    resolveEnemySeparation();
 
     if (zombieSoundCooldown > 0) zombieSoundCooldown = Math.max(0, zombieSoundCooldown - dt);
     if (zombieSoundCooldown <= 0 && enemies.length > 0) {
@@ -1326,58 +1218,69 @@ function update(dt) {
     if (player.hurtTimer > 0) {
         player.hurtTimer = Math.max(0, player.hurtTimer - dt);
     }
-    // for (const en of enemies) {
-    //     if (en.hp <= 0) continue;
-    //     if (en.type === 'burrower') continue;
 
-    //     const px = player.x - en.x;
-    //     const py = player.y - en.y;
-    //     if (Math.hypot(px, py) <= player.radius + en.radius) {
-    //         if (player.hitCooldown <= 0) {
-
-    //             const enemyDamage = getEnemyDamage(en.type);
-
-    //             player.health = Math.max(0, player.health - enemyDamage);
-
-    //             floats.push({
-    //                 x: player.x,
-    //                 y: player.y - 32,
-    //                 vy: -45,
-    //                 life: 0.8,
-    //                 text: `-${enemyDamage}`
-    //             });
-
-    //             player.hitCooldown = 0.8;
-    //             player.hurtTimer = 0.28;
-    //             playHurtSound();
-    //             player.speedBoostTimer = 0.7;
-    //             player.speedBoostMultiplier = 1.25;
-
-    //             if (player.health <= 0 && !isGameOver) {
-    //                 isGameOver = true;
-    //                 gameStarted = false;
-    //                 gameOverMenu.style.display = 'flex';
-    //                 canvas.style.cursor = 'auto';
-    //                 document.body.classList.remove('game-playing');
-    //                 gameOverTime.textContent = `生存時間: ${Math.floor(survivalTime)}s`;
-    //                 gameOverScore.textContent = `分數: ${score}`;
-    //                 playDeathSound();
-    //             }
-    //         }
-    //         break;
-    //     }
-    // }
 
     if (isGameOver) return;
 
     handleAttackHits();
 }
 
+
+
+function getCurrentSpawnInterval() {
+
+    if (survivalTime < 60) {
+        return 1.8 - survivalTime * 0.0035;
+    }
+
+    if (survivalTime < 150) {
+        return 1.59 - (survivalTime - 60) * 0.0025;
+    }
+
+    if (survivalTime < 240) {
+        return 1.365 - (survivalTime - 150) * 0.0026;
+    }
+
+    return Math.max(
+        0.8,
+        1.13 - (survivalTime - 240) * 0.0022
+    );
+}
+
+function resolveEnemySeparation() {
+    // 敵人互相推開，避免全部疊成一團
+    for (let i = 0; i < enemies.length; i++) {
+        for (let j = i + 1; j < enemies.length; j++) {
+            const a = enemies[i];
+            const b = enemies[j];
+
+            if (a.type === 'burrower' && a.burrowState === 'burrowing') continue;
+            if (b.type === 'burrower' && b.burrowState === 'burrowing') continue;
+
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const dist = Math.hypot(dx, dy) || 1;
+            const minDist = a.radius + b.radius - 4;
+
+            if (dist < minDist) {
+                const push = (minDist - dist) * 0.25;
+                const nx = dx / dist;
+                const ny = dy / dist;
+
+                a.x -= nx * push;
+                a.y -= ny * push;
+                b.x += nx * push;
+                b.y += ny * push;
+            }
+        }
+    }
+}
+
 function handleEnemyDeath(en, i) {
     const defeatedBoss = en.type === 'boss';
 
     // 爆炸效果
-    if (explosionEnabled) {
+    if (explosionEnabled && Math.random() < explosionChance) {
 
         explosions.push({
             x: en.x,
@@ -1422,7 +1325,7 @@ function handleEnemyDeath(en, i) {
         expGain = 3;
     } else if (en.type === 'burrower') {
         expGain = 6;
-    } 
+    }
 
     playerExp += expGain;
     killCount++;
@@ -1831,6 +1734,7 @@ function startBossSlam(en) {
     en.bossSkillState = 'slamWindup';
     en.bossSkillTimer = bossSlamWindupTime;
     en.bossSkillAngle = Math.atan2(player.y - en.y, player.x - en.x);
+    bossHeavySwingSound();
 }
 
 function resolveBossSlam(en) {
@@ -1859,6 +1763,8 @@ function resolveBossSlam(en) {
         Math.abs(angleDiff) <= bossSlamArc / 2
     ) {
         damagePlayer(bossSlamDamage);
+
+        playHeavyHurtSound();
 
         player.knockbackX = (dx / dist) * 220;
         player.knockbackY = (dy / dist) * 220;

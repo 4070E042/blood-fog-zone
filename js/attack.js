@@ -40,7 +40,7 @@ function handleAutoAttack() {
 function handleAttackHits() {
 
     if (!isSwinging) return;
-    
+
     const baseAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
     const offset = -swingArc / 2 + swingArc * swingProgress;
     const angle = baseAngle + offset;
@@ -78,13 +78,35 @@ function handleAttackHits() {
             en.hitTimer = 0.12;
             en.hp -= stickDamage;
 
-            if (damageLevel >= 3) {
+            // ================================
+            // 破顱打擊額外效果
+            // Lv2：非 Boss 額外傷害
+            // Lv3：非 Boss 僵直與擊退
+            // ================================
+            if (en.type !== 'boss' && damageLevel >= 2) {
+                en.hp -= 2;
+            }
+
+            if (en.type !== 'boss' && damageLevel >= 3) {
                 const pushX = en.x - player.x;
                 const pushY = en.y - player.y;
                 const pushLen = Math.hypot(pushX, pushY) || 1;
 
-                en.x += (pushX / pushLen) * 22;
-                en.y += (pushY / pushLen) * 22;
+                en.stunTimer = Math.max(en.stunTimer || 0, 0.18);
+                en.x += (pushX / pushLen) * 32;
+                en.y += (pushY / pushLen) * 32;
+
+                en.x =
+                    Math.max(
+                        en.radius,
+                        Math.min(canvas.width - en.radius, en.x)
+                    );
+
+                en.y =
+                    Math.max(
+                        en.radius,
+                        Math.min(canvas.height - en.radius, en.y)
+                    );
             }
 
             if (en.type === 'screamer') {
@@ -109,10 +131,10 @@ function handleAttackHits() {
             // 顯示攻擊傷害
             //floats.push({ x: en.x, y: en.y - en.radius - 6, vy: -40, life: 0.8, text: `-${stickDamage}` });
 
-            addBloodExecutionValue(bloodExecutionGainOnHit);
             healFromBloodExecutionHit();
+            addBloodExecutionValue(bloodExecutionGainOnHit);
 
-            try { hitAudio.currentTime = 0; hitAudio.play().catch(() => { }); } catch (e) { }
+            playHitSound();
         }
     }
 }

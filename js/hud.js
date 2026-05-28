@@ -20,16 +20,19 @@ const hudAdrenalineLevel = document.getElementById('trait-adrenaline');
 const hudSkullHitLevel = document.getElementById('trait-skull-hit');
 const hudFrenzyLevel = document.getElementById('trait-frenzy');
 const hudGripLevel = document.getElementById('trait-grip');
+const hudExplosionLevel = document.getElementById('trait-explosion');
 
 const slotAdrenaline = document.getElementById('slot-adrenaline');
 const slotSkullHit = document.getElementById('slot-skull-hit');
 const slotFrenzy = document.getElementById('slot-frenzy');
 const slotGrip = document.getElementById('slot-grip');
+const slotExplosion = document.getElementById('slot-explosion');
 
 const iconAdrenaline = document.getElementById('icon-adrenaline');
 const iconSkullHit = document.getElementById('icon-skull-hit');
 const iconFrenzy = document.getElementById('icon-frenzy');
 const iconGrip = document.getElementById('icon-grip');
+const iconExplosion = document.getElementById('icon-explosion');
 
 
 // ================================
@@ -207,8 +210,9 @@ function updateHUD() {
 
     updateTraitSlot(slotAdrenaline, iconAdrenaline, hudAdrenalineLevel, speedLevel, '👟');
     updateTraitSlot(slotSkullHit, iconSkullHit, hudSkullHitLevel, damageLevel, '🗡️');
-    updateTraitSlot(slotFrenzy, iconFrenzy, hudFrenzyLevel, attackSpeedLevel, '⚡');
+    updateTraitSlot(slotFrenzy, iconFrenzy, hudFrenzyLevel, attackSpeedLevel, '🥁');
     updateTraitSlot(slotGrip, iconGrip, hudGripLevel, rangeLevel, '📏');
+    updateTraitSlot(slotExplosion, iconExplosion, hudExplosionLevel, explosionLevel, '💥');
 
 
     // ================================

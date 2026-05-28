@@ -27,6 +27,7 @@ const bloodRageAttackCooldownMultiplier = 0.7;
 const bloodRageRangeBonus = 20;
 const bloodRageHealOnKill = 2;
 const bloodExecutionMaxHealOnHit = 0.4;
+const bloodRageBloodExecutionHealMultiplier = 2;
 
 let boneBreakerUnlocked = false;
 let boneBreakerLevel = 0;
@@ -34,15 +35,22 @@ let boneBreakerCooldownTimer = 0;
 let boneBreakerWindupTimer = 0;
 let boneBreakerPending = null;
 
-const boneBreakerCooldownTime = 10;
-const boneBreakerMaxLevel = 5;
+// 裂骨重擊（R）設定
+const boneBreakerCooldownTime = 10;                 // 基礎冷卻時間
+const boneBreakerMaxLevel = 5;                      // 技能最高等級
+
+// 各等級冷卻時間
 const boneBreakerCooldownByLevel = [0, 10, 9, 8, 7, 6];
-const boneBreakerWindupTime = 0.4;
-const boneBreakerMoveMultiplier = 0.45;
-const boneBreakerRange = 125;
-const boneBreakerArc = Math.PI * 0.85;
-const boneBreakerDamage = 32;
-const boneBreakerKnockback = 75;
+
+const boneBreakerWindupTime = 0.2;                 // 技能前搖時間
+const boneBreakerMoveMultiplier = 0.45;            // 前搖期間移動速度倍率
+
+const boneBreakerRange = 125;                      // 技能攻擊距離
+const boneBreakerArc = Math.PI * 0.85;             // 扇形攻擊範圍
+
+const boneBreakerDamage = 32;                      // 技能傷害
+const boneBreakerKnockback = 120;                  // 擊退距離
+const boneBreakerStunTime = 1.0;                   // 命中僵直時間
 
 function updateAttackCooldownTime() {
     let cooldownTime = baseAttackCooldownTime;
@@ -127,13 +135,17 @@ function updateBloodExecution(dt) {
 
 function healFromBloodExecutionHit() {
     if (playerClass !== 'executioner') return;
-    if (bloodExecutionValue <= 0) return;
+    if (bloodExecutionValue < bloodExecutionMax) return;
+
+    const beforeHealth = player.health;
 
     const executionRatio =
         bloodExecutionValue / bloodExecutionMax;
 
     const healAmount =
-        executionRatio * bloodExecutionMaxHealOnHit;
+        executionRatio *
+        bloodExecutionMaxHealOnHit *
+        (bloodRageActive ? bloodRageBloodExecutionHealMultiplier : 1);
 
     if (healAmount <= 0) return;
 
@@ -142,6 +154,21 @@ function healFromBloodExecutionHit() {
             player.maxHealth,
             player.health + healAmount
         );
+
+    const healedAmount = player.health - beforeHealth;
+
+    if (healedAmount <= 0) return;
+
+    //playHealSound();
+
+    floats.push({
+        x: player.x,
+        y: player.y - 34,
+        vy: -42,
+        life: 0.65,
+        text: `+${Math.max(1, Math.round(healedAmount / bloodExecutionMaxHealOnHit))}`,
+        color: bloodRageActive ? '255,150,150' : '120,255,150'
+    });
 }
 
 function activateBloodRage() {
@@ -150,6 +177,7 @@ function activateBloodRage() {
     if (bloodRageActive) return;
     if (bloodRageCooldownTimer > 0) return;
 
+    playBloodRageSound();
     bloodRageActive = true;
     bloodRageTimer = getBloodRageDuration();
     bloodRageCooldownTimer = 0;
@@ -182,6 +210,8 @@ function activateBloodStep() {
     if (isGameOver) return;
     if (player.isBound) return;
     if (bloodStepCooldownTimer > 0) return;
+
+    playdashSound();
 
     const angle =
         Math.atan2(
@@ -232,6 +262,8 @@ function activateBoneBreaker() {
     if (boneBreakerCooldownTimer > 0) return;
     if (boneBreakerPending) return;
 
+
+    playHeavyCleaveSound();
     const baseAngle =
         Math.atan2(
             mouse.y - player.y,
@@ -297,8 +329,10 @@ function resolveBoneBreaker() {
 
         if (Math.abs(angleDiff) > boneBreakerArc / 2) continue;
 
+        playHeavyDamageSound();
         en.hp -= boneBreakerDamage;
         en.hitTimer = 0.16;
+        en.stunTimer = Math.max(en.stunTimer || 0, boneBreakerStunTime);
 
         const nx = dx / dist;
         const ny = dy / dist;
@@ -336,8 +370,8 @@ function resolveBoneBreaker() {
             text: `裂骨-${boneBreakerDamage}`
         });
 
-        addBloodExecutionValue(bloodExecutionGainOnHit);
         healFromBloodExecutionHit();
+        addBloodExecutionValue(bloodExecutionGainOnHit);
 
         hitCount++;
     }
@@ -357,11 +391,6 @@ function resolveBoneBreaker() {
 
     boneBreakerPending = null;
     boneBreakerWindupTimer = 0;
-
-    try {
-        hitAudio.currentTime = 0;
-        hitAudio.play().catch(() => { });
-    } catch (e) { }
 }
 
 function getBloodStepCooldown() {
@@ -416,7 +445,7 @@ function healFromBloodRageKill() {
         y: player.y - 28,
         vy: -45,
         life: 0.65,
-        text: `+${healedAmount} HP`
+        text: `+${Math.floor(healedAmount)} HP`
     });
 }
 

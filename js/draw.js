@@ -827,7 +827,6 @@ function drawLowHealthOverlay() {
 function updateHealthPackSpawn(dt) {
     healthPackTimer += dt;
 
-    return;
     if (survivalTime >= 90 && healthPackTimer >= healthPackInterval) {
         healthPackTimer = 0;
 
@@ -855,9 +854,10 @@ function updateHealthPacks(dt) {
         if (dist <= player.radius + hp.radius) {
             const beforeHealth = player.health;
 
-            player.health = Math.min(100, player.health + 25);
+            player.health = Math.min(player.maxHealth, player.health + 25);
 
             const healedAmount = player.health - beforeHealth;
+            playHealSound();
 
             floats.push({
                 x: player.x,
@@ -1138,6 +1138,49 @@ function drawPlayer() {
             Math.PI * 2
         );
         ctx.stroke();
+
+        ctx.globalCompositeOperation = 'source-over';
+    }
+
+    if (speedLevel >= 2 && player.hurtTimer > 0) {
+        const boostAlpha =
+            Math.min(0.45, 0.18 + player.hurtTimer * 0.8);
+        const pulse =
+            2 + Math.sin(performance.now() * 0.035) * 2;
+
+        ctx.globalCompositeOperation = 'lighter';
+
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(255, 95, 80, ${boostAlpha})`;
+        ctx.lineWidth = 2;
+        ctx.arc(
+            player.x,
+            player.y,
+            player.radius + 12 + pulse,
+            0,
+            Math.PI * 2
+        );
+        ctx.stroke();
+
+        if (playerMoveDir.x !== 0 || playerMoveDir.y !== 0) {
+            ctx.strokeStyle = `rgba(255, 170, 130, ${boostAlpha})`;
+            ctx.lineWidth = 3;
+
+            for (let i = -1; i <= 1; i++) {
+                const sideX = -playerMoveDir.y * i * 7;
+                const sideY = playerMoveDir.x * i * 7;
+                const startX = player.x - playerMoveDir.x * 8 + sideX;
+                const startY = player.y - playerMoveDir.y * 8 + sideY;
+
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(
+                    startX - playerMoveDir.x * 18,
+                    startY - playerMoveDir.y * 18
+                );
+                ctx.stroke();
+            }
+        }
 
         ctx.globalCompositeOperation = 'source-over';
     }

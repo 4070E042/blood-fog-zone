@@ -152,6 +152,8 @@ window.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key.toLowerCase() === 'l') {
         e.preventDefault();
 
+        if (!isPracticeMode) return;
+
         if (!gameStarted || isGameOver || isUpgradeActive) return;
 
         playerExp = playerNextExp;

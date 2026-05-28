@@ -547,7 +547,9 @@ function drawFloatingTexts() {
             ctx.font = '18px sans-serif';
         }
 
-        ctx.fillStyle = `rgba(255,200,80,${alpha})`;
+        ctx.fillStyle = f.color
+            ? `rgba(${f.color},${alpha})`
+            : `rgba(255,200,80,${alpha})`;
 
         ctx.fillText(
             f.text,

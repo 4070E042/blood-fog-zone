@@ -474,7 +474,7 @@ function applyBotUpgrade() {
 
     if (
         speedLevel < TRAIT_MAX_LEVEL &&
-        player.speed < PLAYER_MAX_SPEED
+        (speedLevel > 0 || player.speed < PLAYER_MAX_SPEED)
     ) {
         choices.push('speed');
     }
@@ -499,6 +499,13 @@ function applyBotUpgrade() {
         )
     ) {
         choices.push('boneBreaker');
+    }
+
+    if (
+        playerLevel >= 3 &&
+        explosionLevel < TRAIT_MAX_LEVEL
+    ) {
+        choices.push('explosion');
     }
 
     if (choices.length <= 0) {
