@@ -201,7 +201,7 @@ function updateHUD() {
     hudKills.textContent = `💀 ${killCount}`;
 
     // 等級
-    hudLevel.textContent = `✦ Lv. ${playerLevel}`;
+    hudLevel.textContent = `✦ Lv. ${player.level}`;
 
 
     // ================================
@@ -227,7 +227,7 @@ function updateHUD() {
     // EXP Bar
     // ================================
 
-    const expRatio = playerExp / playerNextExp;
+    const expRatio = player.exp / player.nextExp;
     expBarFill.style.width = `${Math.min(100, expRatio * 100)}%`;
 
     if (playerClass !== 'executioner') {

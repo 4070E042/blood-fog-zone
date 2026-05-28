@@ -494,15 +494,15 @@ function applyBotUpgrade() {
     if (
         boneBreakerLevel < boneBreakerMaxLevel &&
         (
-            (!boneBreakerUnlocked && playerLevel >= 6) ||
-            (boneBreakerUnlocked && playerLevel >= 12)
+            (!boneBreakerUnlocked && player.level >= 6) ||
+            (boneBreakerUnlocked && player.level >= 12)
         )
     ) {
         choices.push('boneBreaker');
     }
 
     if (
-        playerLevel >= 3 &&
+        player.level >= 3 &&
         explosionLevel < TRAIT_MAX_LEVEL
     ) {
         choices.push('explosion');

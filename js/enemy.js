@@ -8,6 +8,39 @@ let burrowSpawnCooldown = 0;
 let leaperSpawnCooldown = 35;
 let screamerSpawnCooldown = 60;
 
+const ENEMY_BASE = {
+    normal: {
+        hp: 10,
+        speed: 55,
+        damage: 10,
+        radius: 18
+    },
+
+    leaper: {
+        hp: 18,
+        speed: 100,
+        damage: 16,
+        radius: 18,
+        spawnCooldown: 35
+    },
+
+    screamer: {
+        hp: 38,
+        speed: 70,
+        radius: 18,
+        spawnCooldown: 60
+    },
+
+    burrower: {
+        hp: 50,
+        speed: 80,
+        damage: 12,
+        radius: 18,
+        spawnCooldown: 60
+    }
+};
+
+
 // ================================
 // Screamer 系統
 // ================================
@@ -27,23 +60,45 @@ const SCREAMER = {
 
 function getEnemyBaseHP() {
 
-    if (survivalTime < 30) {
-        return 10;
-    }
-
-    if (survivalTime < 70) {
-        return 11;
-    }
-
-    if (survivalTime < 100) {
-        return 12;
-    }
-
-    if (survivalTime < 120) {
-        return 16;
-    }
+    if (survivalTime < 30) return 10;
+    if (survivalTime < 70) return 11;
+    if (survivalTime < 100) return 12;
+    if (survivalTime < 120) return 16;
 
     return 18 + Math.floor((survivalTime - 120) / 35) * 2;
+}
+
+function getEnemyHpForType(type) {
+    const baseHp = getEnemyBaseHP();
+
+    const normalHp =
+        survivalTime < 30
+            ? baseHp
+            : baseHp + Math.floor(Math.random() * 5) - 2;
+
+    return type === 'leaper'
+        ? baseHp + 8 + Math.floor(survivalTime / 90) * 4
+        : type === 'burrower'
+            ? baseHp + 40 + Math.floor(survivalTime / 180) * 5
+            : type === 'screamer'
+                ? baseHp + 28 + Math.floor(survivalTime / 120) * 6
+                : Math.max(8, normalHp);
+}
+
+function getSpecialEnemySpeed(type) {
+    if (type === 'leaper') {
+        return 100 + Math.random() * 20;
+    }
+
+    if (type === 'screamer') {
+        return 70 + Math.random() * 20;
+    }
+
+    if (type === 'burrower') {
+        return 80 + Math.random() * 20;
+    }
+
+    return null;
 }
 
 function getEnemyDamage(type) {
@@ -57,13 +112,16 @@ function getEnemyDamage(type) {
 }
 
 function createEnemy(type, x, y, enemySpeed, enemyHp) {
-    const radius = type === 'boss' ? 34 : 18;
+    const enemyRadius =
+        type === 'boss'
+            ? BOSS_BASE.radius
+            : (ENEMY_BASE[type] || ENEMY_BASE.normal).radius;
 
     enemies.push({
         id: nextEnemyId++,
         x,
         y,
-        radius,
+        radius: enemyRadius,
         speed: enemySpeed,
         baseSpeed: enemySpeed,
         hp: enemyHp,
@@ -120,21 +178,20 @@ function getEnemyStats(type) {
     const zombieMaxSpeed = 130;
     const speedBonus = Math.floor(survivalTime / 50) * 5;
     const normalSpeed = Math.min(55 + Math.random() * 35 + speedBonus, zombieMaxSpeed);
-    const baseHp = getEnemyBaseHP();
 
     let enemySpeed = normalSpeed;
 
     switch (type) {
         case 'leaper':
-            enemySpeed = 100 + Math.random() * 20;
+            enemySpeed = getSpecialEnemySpeed(type);
             break;
 
         case 'screamer':
-            enemySpeed = 70 + Math.random() * 20;
+            enemySpeed = getSpecialEnemySpeed(type);
             break;
 
         case 'burrower':
-            enemySpeed = 80 + Math.random() * 20;
+            enemySpeed = getSpecialEnemySpeed(type);
             break;
 
         case 'boss':
@@ -142,24 +199,13 @@ function getEnemyStats(type) {
             break;
     }
 
-    const normalHp =
-        survivalTime < 30
-            ? 10
-            : baseHp + Math.floor(Math.random() * 5) - 2;
-
     const bossHp = 1000;
 
 
     const enemyHp =
         type === 'boss'
             ? bossHp
-            : type === 'leaper'
-                ? baseHp + 8 + Math.floor(survivalTime / 90) * 4
-                : type === 'burrower'
-                    ? baseHp + 40 + Math.floor(survivalTime / 180) * 5
-                    : type === 'screamer'
-                        ? baseHp + 28 + Math.floor(survivalTime / 120) * 6
-                        : Math.max(8, normalHp);
+            : getEnemyHpForType(type);
 
     return {
         speed: enemySpeed,
@@ -201,7 +247,6 @@ function spawnEnemy(allowSpecial = true) {
     // ================================
     // 基礎資料
     // ================================
-    const baseHp = getEnemyBaseHP();
     const burrowerCount = enemies.filter(e => e.type === 'burrower').length;
     const screamerCount = enemies.filter(e => e.type === 'screamer').length;
 
@@ -278,12 +323,12 @@ function spawnEnemy(allowSpecial = true) {
                 leaperSpawnCooldown = 6 + Math.random() * 3;
             }
 
-            enemySpeed = 100 + Math.random() * 20;
+            enemySpeed = getSpecialEnemySpeed(type);
             break;
 
         case 'screamer':
             // Screamer 是局勢怪，不靠速度威脅
-            enemySpeed = 70 + Math.random() * 20;
+            enemySpeed = getSpecialEnemySpeed(type);
             break;
 
         case 'burrower':
@@ -293,7 +338,7 @@ function spawnEnemy(allowSpecial = true) {
                 burrowSpawnCooldown = 45 + Math.random() * 15;
             }
 
-            enemySpeed = 80 + Math.random() * 20;
+            enemySpeed = getSpecialEnemySpeed(type);
             break;
     }
 
@@ -304,19 +349,7 @@ function spawnEnemy(allowSpecial = true) {
     // 30 秒後：普通怪開始有 HP 浮動，可能需要兩下
     // 特殊怪：比普通怪硬，但不讓前期太誇張
     // ================================
-    const normalHp =
-        survivalTime < 30
-            ? 10
-            : baseHp + Math.floor(Math.random() * 5) - 2;
-
-    const enemyHp =
-        type === 'leaper'
-            ? baseHp + 8 + Math.floor(survivalTime / 90) * 4
-            : type === 'burrower'
-                ? baseHp + 40 + Math.floor(survivalTime / 180) * 5
-                : type === 'screamer'
-                    ? baseHp + 28 + Math.floor(survivalTime / 120) * 6
-                    : Math.max(8, normalHp);
+    const enemyHp = getEnemyHpForType(type);
 
 
 
@@ -380,15 +413,12 @@ function spawnPracticeEnemy(type) {
 }
 
 function spawnBoss() {
-    const stats = getEnemyStats('boss');
-    const radius = 34;
-
     createEnemy(
         'boss',
         canvas.width / 2,
-        -radius,
-        stats.speed,
-        stats.hp
+        -BOSS_BASE.radius,
+        BOSS_BASE.speed,
+        BOSS_BASE.hp
     );
 }
 

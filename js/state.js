@@ -18,35 +18,6 @@ let practiceSelectedEnemyType = 'normal';
 let currentThreatPhase = 0;            // 當前威脅階段
 let phaseAlertTimer = 0;               // 階段提示計時
 
-// Boss 狀態
-let bossSpawned = false;               // Boss 是否已生成
-let bossIntroActive = false;           // Boss 登場動畫中
-let bossIntroTimer = 0;                // Boss 登場計時
-let bossFightStarted = false;          // Boss 戰是否正式開始
-const bossIntroDuration = 3.0;         // Boss 登場持續時間
-
-// Boss 血條 UI
-let bossHealthBarVisible = false;      // Boss 血條顯示中
-let bossHealthBarAnim = 0;             // Boss 血條動畫進度
-// 巨斧重擊
-const bossSlamCooldownTime = 6.0;      // 技能冷卻
-const bossSlamWindupTime = 1.0;        // 前搖時間
-const bossSlamRange = 160;             // 重擊距離
-const bossSlamArc = Math.PI * 1.05;    // 扇形範圍
-const bossSlamDamage = 54;             // 重擊傷害
-
-// 衝鋒踐踏
-const bossChargeCooldownTime = 12.0;   // 技能冷卻
-const bossChargeWindupTime = 0.8;      // 衝鋒前搖
-const bossChargeDistanceRatio = 0.35;  // 衝鋒距離比例
-const bossChargeSpeed = 340;           // 衝鋒速度
-const bossChargeDamage = 80;           // 衝鋒傷害
-
-// Boss 普攻
-const bossBasicAttackCooldownTime = 1.8; // 普攻冷卻
-const bossBasicAttackWindupTime = 0.55;  // 普攻前搖
-const bossBasicAttackRange = 54;         // 普攻距離
-const bossBasicAttackDamage = 22;        // 普攻傷害
 
 const CLASSES = {
     executioner: {
@@ -91,6 +62,67 @@ const CLASSES = {
         description: '以近距離戰鬥成形的殭屍生存職業'
     }
 };
+const GAME_BASE = {
+    survivalTime: 0,
+    score: 0,
+}
+
+// ================================
+// Boss 固定資料
+// ================================
+const BOSS_STATE = {
+    spawned: false,
+
+    introActive: false,
+    introTimer: 0,
+
+    fightStarted: false,
+
+    healthBarVisible: false,
+    healthBarAnim: 0
+}
+
+const BOSS_BASE = {
+    hp: 600,
+    radius: 48,
+    speed: 60,
+    damage: 20,
+    spawnTime: 300
+}
+
+// ================================
+// Boss 宣告參數
+// ================================
+// Boss 狀態
+let bossSpawned = false;               // Boss 是否已生成
+let bossIntroActive = false;           // Boss 登場動畫中
+let bossIntroTimer = 0;                // Boss 登場計時
+let bossFightStarted = false;          // Boss 戰是否正式開始
+const bossIntroDuration = 3.0;         // Boss 登場持續時間
+
+// Boss 血條 UI
+let bossHealthBarVisible = false;      // Boss 血條顯示中
+let bossHealthBarAnim = 0;             // Boss 血條動畫進度
+// 巨斧重擊
+const bossSlamCooldownTime = 6.0;      // 技能冷卻
+const bossSlamWindupTime = 1.0;        // 前搖時間
+const bossSlamRange = 160;             // 重擊距離
+const bossSlamArc = Math.PI * 1.05;    // 扇形範圍
+const bossSlamDamage = 54;             // 重擊傷害
+
+// 衝鋒踐踏
+const bossChargeCooldownTime = 12.0;   // 技能冷卻
+const bossChargeWindupTime = 0.8;      // 衝鋒前搖
+const bossChargeDistanceRatio = 0.35;  // 衝鋒距離比例
+const bossChargeSpeed = 340;           // 衝鋒速度
+const bossChargeDamage = 80;           // 衝鋒傷害
+
+// Boss 普攻
+const bossBasicAttackCooldownTime = 1.8; // 普攻冷卻
+const bossBasicAttackWindupTime = 0.55;  // 普攻前搖
+const bossBasicAttackRange = 54;         // 普攻距離
+const bossBasicAttackDamage = BOSS_BASE.damage;
+
 
 let playerClass = null;
 
@@ -113,9 +145,7 @@ const activeSkills = [];
 // 升級系統
 let isUpgradeActive = false;
 
-let playerLevel = 1;
-let playerExp = 0;
-let playerNextExp = 20;
+
 
 // 能力卡等級
 let speedLevel = 0;

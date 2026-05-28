@@ -679,7 +679,9 @@ function drawEnemies() {
 
             ctx.restore();
 
-            drawEnemyHealthBar(en);
+            if (isPracticeMode) {
+                drawEnemyHealthBar(en);
+            }
 
             continue;
         } else if (en.hitTimer > 0) {
@@ -774,6 +776,47 @@ function drawEnemyHealthBar(en) {
             en.x,
             barY + barHeight / 2
         );
+    }
+}
+function updateBossIntro(dt) {
+    if (!bossIntroActive) return false;
+
+    bossIntroTimer = Math.max(0, bossIntroTimer - dt);
+    screenShake = Math.max(screenShake, 3);
+
+    if (bossIntroTimer <= 0) {
+        finishBossIntro();
+        playBossBGM();
+    }
+
+    updateHUD();
+    return true;
+}
+
+function finishBossIntro() {
+    bossIntroActive = false;
+    bossFightStarted = true;
+    bossHealthBarVisible = true;
+    bossHealthBarAnim = 0;
+
+    screenShake = Math.max(screenShake, 16);
+
+    player.health = player.maxHealth;
+
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        if (enemies[i].type !== 'boss') {
+            addCorpseEffect(enemies[i]);
+
+            deathEffects.push({
+                x: enemies[i].x,
+                y: enemies[i].y,
+                radius: enemies[i].radius,
+                life: 0.35,
+                maxLife: 0.35
+            });
+
+            enemies.splice(i, 1);
+        }
     }
 }
 

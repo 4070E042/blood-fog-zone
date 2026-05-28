@@ -171,8 +171,10 @@ function healFromBloodExecutionHit() {
     });
 }
 
+// ================================
+// 使用技能
+// ================================
 function activateBloodRage() {
-    if (playerClass !== 'executioner') return;
     if (!bloodRageUnlocked) return;
     if (bloodRageActive) return;
     if (bloodRageCooldownTimer > 0) return;
@@ -198,19 +200,14 @@ function activateBloodRage() {
         bloodRage: true
     });
 
-    addFloatText('血怒！', 0.8);
+    addFloatText('血性狂暴', 0.8);
 }
-
 function activateBloodStep() {
-    if (playerClass !== 'executioner') return;
+    // 使用條件
     if (!bloodStepUnlocked) return;
-    if (!gameStarted) return;
-    if (isUpgradeActive) return;
-    if (isPaused) return;
-    if (isGameOver) return;
-    if (player.isBound) return;
     if (bloodStepCooldownTimer > 0) return;
-
+    if (player.isBound) return;
+    
     playdashSound();
 
     const angle =
@@ -252,16 +249,11 @@ function activateBloodStep() {
 }
 
 function activateBoneBreaker() {
-    if (playerClass !== 'executioner') return;
+    // 使用條件
     if (!boneBreakerUnlocked) return;
-    if (!gameStarted) return;
-    if (isUpgradeActive) return;
-    if (isPaused) return;
-    if (isGameOver) return;
-    if (player.isBound) return;
     if (boneBreakerCooldownTimer > 0) return;
     if (boneBreakerPending) return;
-
+    if (player.isBound) return;
 
     playHeavyCleaveSound();
     const baseAngle =
@@ -293,7 +285,6 @@ function activateBoneBreaker() {
 
     addFloatText('裂骨重擊', 0.8);
 }
-
 function resolveBoneBreaker() {
     if (!boneBreakerPending) return;
 
@@ -397,17 +388,14 @@ function getBloodStepCooldown() {
     return bloodStepCooldownByLevel[bloodStepLevel] ||
         bloodStepCooldownByLevel[bloodStepMaxLevel];
 }
-
 function getBoneBreakerCooldown() {
     return boneBreakerCooldownByLevel[boneBreakerLevel] ||
         boneBreakerCooldownByLevel[boneBreakerMaxLevel];
 }
-
 function getBloodRageDuration() {
     return bloodRageDuration +
         Math.max(0, bloodRageLevel - 1) * bloodRageDurationPerLevel;
 }
-
 function getBloodRageCooldown() {
     return bloodRageCooldownByLevel[bloodRageLevel] ||
         bloodRageCooldownByLevel[bloodRageMaxLevel];

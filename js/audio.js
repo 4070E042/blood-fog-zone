@@ -5,12 +5,17 @@ const zombieAudios = [
     new Audio('sounds/zombie2.mp3')
 ];
 
+const bgm = new Audio('sounds/bgm.mp3');
+const bossBgm = new Audio('sounds/boss_bgm.mp3');
+
 const hurtAudio = new Audio('sounds/hurt.mp3');
 const swingAudio = new Audio('sounds/swing.mp3');
 const deathAudio = new Audio('sounds/death.mp3');
 const burrowAudio = new Audio('sounds/burrow.mp3');
 const screamAudio = new Audio('sounds/scream.mp3');
 const levelUpAudio = new Audio('sounds/levelup.mp3');
+const uiHoverAudio = new Audio('sounds/ui_hover.mp3');
+let lastUIHoverSoundTime = 0;
 
 // 回血音效
 const healAudio = new Audio('sounds/heal.mp3');
@@ -26,6 +31,66 @@ const bloodRageAudio = new Audio('sounds/blood_rage.mp3');
 const heavyCleaveAudio = new Audio('sounds/heavy_cleave.mp3');
 const heavyDamageAudio = new Audio('sounds/heavy_damage.mp3');
 
+// BOSS 音效
+const bossRoarAudio = new Audio('sounds/boss_roar.mp3');
+
+function playBGM() {
+
+    try {
+
+        bgm.loop = true;
+
+        bgm.play().catch(() => { });
+
+    } catch (e) { }
+
+}
+
+function stopBGM() {
+
+    try {
+
+        bgm.pause();
+        bgm.currentTime = 0;
+
+    } catch (e) { }
+
+}
+
+function playBossBGM() {
+
+    try {
+
+        bossBgm.loop = true;
+
+        bossBgm.play().catch(() => { });
+
+    } catch (e) { }
+
+}
+function stopBossBGM() {
+
+    try {
+
+        bossBgm.pause();
+        bossBgm.currentTime = 0;
+
+    } catch (e) { }
+
+}
+
+function playBossRoarSound() {
+
+    try {
+
+        bossRoarAudio.currentTime = 0;
+
+        bossRoarAudio.play().catch(() => { });
+
+    } catch (e) { }
+
+}
+
 function playLevelUpSound() {
 
     try {
@@ -33,6 +98,24 @@ function playLevelUpSound() {
         levelUpAudio.currentTime = 0;
 
         levelUpAudio.play().catch(() => { });
+
+    } catch (e) { }
+
+}
+
+function playUIHoverSound(force = false) {
+
+    const now = performance.now();
+
+    if (!force && now - lastUIHoverSoundTime < 90) return;
+
+    lastUIHoverSoundTime = now;
+
+    try {
+
+        uiHoverAudio.currentTime = 0;
+
+        uiHoverAudio.play().catch(() => { });
 
     } catch (e) { }
 

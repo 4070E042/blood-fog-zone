@@ -38,10 +38,7 @@ const SKILL_UPGRADE_MAP = {
     }
 };
 
-//const LEVEL_EXP_TABLE = [ 0,8,14,22,32,45,60,78 ];
-const LEVEL_EXP_TABLE = [0, 8, 9, 10, 11, 12, 13, 14];
 
-const PLAYER_MAX_SPEED = 150;
 
 upgradeSpeedButton.addEventListener('click', () => applyUpgrade('speed'));
 upgradeDamageButton.addEventListener('click', () => applyUpgrade('damage'));
@@ -248,7 +245,7 @@ function showRandomUpgradeCards() {
     }
 
     if (
-        playerLevel >= 3 &&
+        player.level >= 3 &&
         explosionLevel < TRAIT_MAX_LEVEL
     ) {
         updateExplosionCardUI();
@@ -288,8 +285,8 @@ function showRandomUpgradeCards() {
         } else if (
             skillUpgrade.upgradeType === 'boneBreaker' &&
             (
-                (!boneBreakerUnlocked && playerLevel >= 6) ||
-                (boneBreakerUnlocked && playerLevel >= 12)
+                (!boneBreakerUnlocked && player.level >= 6) ||
+                (boneBreakerUnlocked && player.level >= 12)
             ) &&
             boneBreakerLevel < boneBreakerMaxLevel
         ) {
@@ -297,11 +294,11 @@ function showRandomUpgradeCards() {
 
             if (
                 (
-                    playerLevel === 6 &&
+                    player.level === 6 &&
                     !boneBreakerUnlocked
                 ) ||
                 (
-                    playerLevel === 12 &&
+                    player.level === 12 &&
                     boneBreakerUnlocked &&
                     boneBreakerLevel === 1
                 )
@@ -316,14 +313,14 @@ function showRandomUpgradeCards() {
 
         } else if (
             skillUpgrade.upgradeType === 'shockwave' &&
-            playerLevel >= 1 &&
+            player.level >= 1 &&
             !shockwaveUnlocked
         ) {
             cards.push(skillUpgrade.button);
 
         } else if (
             skillUpgrade.upgradeType === 'orbit' &&
-            playerLevel >= 1 &&
+            player.level >= 1 &&
             !orbitUnlocked
         ) {
             cards.push(skillUpgrade.button);
@@ -345,7 +342,7 @@ function showRandomUpgradeCards() {
     const selected = [];
 
     const guaranteedBoneBreaker =
-        playerLevel === 6 &&
+        player.level === 6 &&
         !boneBreakerUnlocked &&
         uniqueCards.includes(upgradeBoneBreakerButton);
 
@@ -399,20 +396,20 @@ function applyLevelUpStats() {
 
     upgradeEffectTimer = 2.0;
     playLevelUpSound();
-    //addFloatText(`⬆ Lv.${playerLevel}`, 1.2);
+    //addFloatText(`⬆ Lv.${player.level}`, 1.2);
 }
 
 function levelUp() {
 
-    playerExp -= playerNextExp;
+    player.exp -= player.nextExp;
 
-    playerLevel++;
+    player.level++;
 
     applyLevelUpStats();
 
-    playerNextExp =
-        LEVEL_EXP_TABLE[playerLevel] ||
-        Math.floor(playerNextExp * 1.25);
+    player.nextExp =
+        LEVEL_EXP_TABLE[player.level] ||
+        Math.floor(player.nextExp * 1.25);
 
     const shouldUpgrade = true;
 

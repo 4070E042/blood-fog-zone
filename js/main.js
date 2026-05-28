@@ -75,6 +75,8 @@ function triggerGameOver() {
 
     if (isGameOver) return;
 
+    stopBGM();
+    stopBossBGM();
     isGameOver = true;
     gameStarted = false;
 
@@ -92,7 +94,7 @@ function triggerGameOver() {
 }
 
 function resetGame() {
-
+    playBGM();
     // ================================
     // 遊戲流程
     // ================================
@@ -108,15 +110,13 @@ function resetGame() {
     // ================================
     // 分數 / 時間
     // ================================
-    survivalTime = 0;
-    score = 0;
+    survivalTime = GAME_BASE.survivalTime;
+    score = GAME_BASE.score;
     killCount = 0;
 
-    playerLevel = 1;
-    playerExp = 0;
-    playerNextExp = 8;
-
-
+    player.level = 1;
+    player.exp = 0;
+    player.nextExp = 8;
 
     // ================================
     // Combo
@@ -132,12 +132,13 @@ function resetGame() {
     upgradeEffectTimer = 0;
     currentThreatPhase = 0;
     phaseAlertTimer = 0;
-    bossSpawned = false;
-    bossIntroActive = false;
-    bossIntroTimer = 0;
-    bossFightStarted = false;
-    bossHealthBarVisible = false;
-    bossHealthBarAnim = 0;
+
+    bossSpawned = BOSS_STATE.spawned;
+    bossIntroActive = BOSS_STATE.introActive;
+    bossIntroTimer = BOSS_STATE.introTimer;
+    bossFightStarted = BOSS_STATE.fightStarted;
+    bossHealthBarVisible = BOSS_STATE.healthBarVisible;
+    bossHealthBarAnim = BOSS_STATE.healthBarAnim;
 
 
     // ================================
@@ -164,7 +165,6 @@ function resetGame() {
     // 玩家
     // ================================
     resetPlayer();
-
 
     // ================================
     // 能力卡
@@ -215,9 +215,6 @@ function resetGame() {
 
     activeBuilds.length = 0;
     activeSkills.length = 0;
-
-
-
 
 
     // ================================
@@ -282,6 +279,7 @@ function renderClassSelect() {
         button.appendChild(description);
 
         button.addEventListener('click', () => {
+            playUIHoverSound();
             playerClass = classInfo.id;
             resetGame();
         });
@@ -312,12 +310,17 @@ function showClassSelect(practiceMode = false) {
 }
 
 startButton.addEventListener('click', () => {
+    playUIHoverSound(true);
     showClassSelect(false);
 });
 
 practiceStartButton.addEventListener('click', () => {
+    playUIHoverSound(true);
     showClassSelect(true);
 });
+
+startButton.addEventListener('mouseenter', playUIHoverSound);
+practiceStartButton.addEventListener('mouseenter', playUIHoverSound);
 
 restartButton.addEventListener('click', () => {
     showClassSelect(false);
@@ -400,8 +403,8 @@ function returnToMainMenuFromVictory() {
     killCount = 0;
     currentThreatPhase = 0;
     phaseAlertTimer = 0;
-    playerExp = 0;
-    playerLevel = 1;
+    player.exp = 0;
+    player.level = 1;
 
     enemies.length = 0;
     healthPacks.length = 0;
@@ -512,16 +515,6 @@ function update(dt) {
         upgradeEffectTimer = Math.max(0, upgradeEffectTimer - dt);
     }
 
-
-    // ================================
-    // 玩家輸入與移動
-    // ================================
-    const moveInput = updatePlayerInput();
-
-    updatePlayerMovement(dt, moveInput.dx, moveInput.dy);
-    updatePlayerPositionClamp();
-
-
     // ================================
     // 玩家狀態效果
     // ================================
@@ -537,8 +530,10 @@ function update(dt) {
     if (
         !isPracticeMode &&
         !bossSpawned &&
-        survivalTime >= 300
+        survivalTime >= BOSS_BASE.spawnTime
     ) {
+        stopBGM();
+        playBossRoarSound();
         bossSpawned = true;
         bossIntroActive = true;
         bossIntroTimer = bossIntroDuration;
@@ -593,42 +588,25 @@ function update(dt) {
     updateBossHealthBar(dt);
 
 
-    if (playerExp >= playerNextExp) {
+    if (player.exp >= player.nextExp) {
         levelUp();
         return;
     }
 
-    if (bossIntroActive) {
-        bossIntroTimer = Math.max(0, bossIntroTimer - dt);
-        screenShake = Math.max(screenShake, 3);
-
-        if (bossIntroTimer <= 0) {
-            bossIntroActive = false;
-            bossFightStarted = true;
-            bossHealthBarVisible = true;
-            bossHealthBarAnim = 0;
-            screenShake = Math.max(screenShake, 16);
-
-            for (let i = enemies.length - 1; i >= 0; i--) {
-                if (enemies[i].type !== 'boss') {
-                    addCorpseEffect(enemies[i]);
-
-                    deathEffects.push({
-                        x: enemies[i].x,
-                        y: enemies[i].y,
-                        radius: enemies[i].radius,
-                        life: 0.35,
-                        maxLife: 0.35
-                    });
-
-                    enemies.splice(i, 1);
-                }
-            }
-        }
-
-        updateHUD();
+    // ================================
+    // Boss 介紹流程
+    // ================================
+    if (updateBossIntro(dt)) {
         return;
     }
+
+    // ================================
+    // 玩家輸入與移動
+    // ================================
+    const moveInput = updatePlayerInput();
+
+    updatePlayerMovement(dt, moveInput.dx, moveInput.dy);
+    updatePlayerPositionClamp();
 
     updateHUD();
 
@@ -1327,7 +1305,7 @@ function handleEnemyDeath(en, i) {
         expGain = 6;
     }
 
-    playerExp += expGain;
+    player.exp += expGain;
     killCount++;
     healFromBloodRageKill();
 
@@ -1661,6 +1639,73 @@ function drawBossFrenzyPulseEffects() {
 
         ctx.restore();
     }
+}
+
+function drawBossAtmosphereOverlay() {
+    if (!bossIntroActive && !bossFightStarted) return;
+
+    const boss =
+        enemies.find(en => en.type === 'boss' && en.hp > 0);
+
+    if (!boss) return;
+
+    const time = performance.now() * 0.001;
+    const frenzyBoost = boss.bossFrenzied ? 1 : 0;
+    const introBoost = bossIntroActive ? 1 : 0;
+    const darkAlpha =
+        0.08 + introBoost * 0.08 + frenzyBoost * 0.05;
+    const redAlpha =
+        0.06 + introBoost * 0.04 + frenzyBoost * 0.08;
+    const fillPad = 80;
+
+    ctx.save();
+
+    ctx.fillStyle = `rgba(12, 0, 4, ${darkAlpha})`;
+    ctx.fillRect(
+        -fillPad,
+        -fillPad,
+        canvas.width + fillPad * 2,
+        canvas.height + fillPad * 2
+    );
+
+    ctx.fillStyle = `rgba(120, 0, 18, ${redAlpha})`;
+    ctx.fillRect(
+        -fillPad,
+        -fillPad,
+        canvas.width + fillPad * 2,
+        canvas.height + fillPad * 2
+    );
+
+    ctx.globalAlpha = 0.12 + frenzyBoost * 0.08;
+    ctx.fillStyle = 'rgba(150, 0, 24, 0.45)';
+
+    for (let i = 0; i < 3; i++) {
+        const phase = time * (0.35 + i * 0.08) + i * 2.1;
+        const x =
+            canvas.width * (0.22 + i * 0.28) +
+            Math.sin(phase) * 34;
+        const y =
+            canvas.height * (0.22 + i * 0.19) +
+            Math.cos(phase * 0.9) * 26;
+        const radiusX =
+            canvas.width * (0.22 + i * 0.03);
+        const radiusY =
+            canvas.height * (0.12 + i * 0.02);
+
+        ctx.beginPath();
+        ctx.ellipse(
+            x,
+            y,
+            radiusX,
+            radiusY,
+            Math.sin(phase) * 0.18,
+            0,
+            Math.PI * 2
+        );
+        ctx.fill();
+    }
+
+    ctx.restore();
 }
 
 function drawBossFrenzyAlert() {
@@ -2035,6 +2080,8 @@ function drawBossIntroOverlay() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    drawGameBackground();
+
     ctx.save();
 
     applyScreenShake();
@@ -2063,6 +2110,7 @@ function draw() {
     drawAttackCooldown();
     drawSkillCooldowns();
 
+    drawBossAtmosphereOverlay();
     drawLowHealthOverlay();
 
     drawAttack();

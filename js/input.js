@@ -14,9 +14,18 @@ const practiceEnemyOptions = [
     { type: 'boss', label: '屠夫巨屍' }
 ];
 
+// ================================
+// 練習模式提示文字顯示
+// ================================
+
 function updatePracticeModeHint() {
-    practiceModeHint.style.display = isPracticeMode ? 'block' : 'none';
+    practiceModeHint.style.display =
+        isPracticeMode ? 'block' : 'none';
 }
+
+// ================================
+// 取得目前選中的練習敵人索引
+// ================================
 
 function getPracticeEnemyIndex() {
     const index = practiceEnemyOptions.findIndex(
@@ -26,35 +35,72 @@ function getPracticeEnemyIndex() {
     return index >= 0 ? index : 0;
 }
 
-function updatePracticePanel() {
-    const selectedEnemy = practiceEnemyOptions[getPracticeEnemyIndex()];
+// ================================
+// 更新練習模式面板內容與顯示狀態
+// ================================
 
-    practiceSelectedEnemy.textContent = selectedEnemy.label;
+function updatePracticePanel() {
+    const selectedEnemy =
+        practiceEnemyOptions[getPracticeEnemyIndex()];
+
+    practiceSelectedEnemy.textContent =
+        selectedEnemy.label;
+
     practicePanel.style.display =
-        isPracticeMode && isPracticePanelOpen ? 'block' : 'none';
+        isPracticeMode && isPracticePanelOpen
+            ? 'block'
+            : 'none';
 }
+
+// ================================
+// 取得目前選中的練習敵人名稱
+// ================================
 
 function getPracticeEnemyLabel() {
-    return practiceEnemyOptions[getPracticeEnemyIndex()].label;
+    return practiceEnemyOptions[
+        getPracticeEnemyIndex()
+    ].label;
 }
+
+// ================================
+// 更新整個練習模式 UI
+// ================================
 
 function updatePracticeModeDisplay() {
     updatePracticeModeHint();
     updatePracticePanel();
 }
 
+// ================================
+// 更新離開練習模式選單顯示狀態
+// ================================
+
 function updatePracticeExitMenu() {
     practiceExitMenu.style.display =
-        isPracticeExitMenuOpen ? 'flex' : 'none';
+        isPracticeExitMenuOpen
+            ? 'flex'
+            : 'none';
 }
 
+// ================================
+// 切換練習模式敵人
+// ================================
+
 function selectPracticeEnemy(step) {
-    const currentIndex = getPracticeEnemyIndex();
+    const currentIndex =
+        getPracticeEnemyIndex();
+
     const nextIndex =
-        (currentIndex + step + practiceEnemyOptions.length) %
+        (
+            currentIndex +
+            step +
+            practiceEnemyOptions.length
+        ) %
         practiceEnemyOptions.length;
 
-    practiceSelectedEnemyType = practiceEnemyOptions[nextIndex].type;
+    practiceSelectedEnemyType =
+        practiceEnemyOptions[nextIndex].type;
+
     updatePracticePanel();
 }
 
@@ -149,6 +195,7 @@ window.addEventListener('keydown', (e) => {
         );
     }
 
+    // CTRL+L | 升等 (練習模式專用)
     if (e.ctrlKey && e.key.toLowerCase() === 'l') {
         e.preventDefault();
 
@@ -156,44 +203,46 @@ window.addEventListener('keydown', (e) => {
 
         if (!gameStarted || isGameOver || isUpgradeActive) return;
 
-        playerExp = playerNextExp;
+        player.exp = player.nextExp;
     }
 
+    // ================================
+    // 職業技能輸入
+    // ================================
+
+    // 判斷是否為執行者職業，且不是按鍵重複事件，且玩家控制沒有被鎖定
     if (
-        (e.key === 'e' || e.key === 'E') &&
-        !e.repeat &&
         playerClass === 'executioner' &&
-        bloodRageUnlocked &&
-        gameStarted &&
-        !isUpgradeActive &&
-        !isPaused &&
-        !isGameOver
+        !e.repeat &&
+        !isPlayerControlLocked()
     ) {
-        e.preventDefault();
-        activateBloodRage();
-        return;
+        // SPACE | 血步突進
+        if (e.code === 'Space') {
+            e.preventDefault();
+            activateBloodStep();
+            return;
+        }
+
+        // E | 血性狂暴
+        if (e.key.toLowerCase() === 'e') {
+            e.preventDefault();
+            activateBloodRage();
+            return;
+        }
+
+        // R | 裂骨重擊
+        if (e.key.toLowerCase() === 'r') {
+            e.preventDefault();
+            activateBoneBreaker();
+            return;
+        }
     }
 
-    if (e.code === 'Space' && !e.repeat) {
-        e.preventDefault();
-        activateBloodStep();
-        return;
-    }
 
-    if (
-        (e.key === 'r' || e.key === 'R') &&
-        !e.repeat &&
-        playerClass === 'executioner' &&
-        boneBreakerUnlocked &&
-        gameStarted &&
-        !isUpgradeActive &&
-        !isPaused &&
-        !isGameOver
-    ) {
-        e.preventDefault();
-        activateBoneBreaker();
-        return;
-    }
+
+
+
+
 
     // 震波技能
     if (
@@ -264,7 +313,7 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => { delete keys[e.key]; });
 
 window.addEventListener('mousemove', (e) => {
-    if (isPaused || isGameOver || isUpgradeActive || !gameStarted) return;
+    if (isPlayerControlLocked()) return;
 
     const r = canvas.getBoundingClientRect();
     mouse.x = Math.max(
@@ -285,7 +334,7 @@ window.addEventListener('mousemove', (e) => {
 });
 
 window.addEventListener('mousedown', (e) => {
-    if (!gameStarted || isUpgradeActive || isPaused || isGameOver) return;
+    if (isPlayerControlLocked()) return;
 
     if (e.button === 0 && !isSwinging && attackCooldown <= 0) {
         isSwinging = true;
@@ -299,3 +348,14 @@ window.addEventListener('mousedown', (e) => {
         } catch (e) { }
     }
 });
+
+// 判斷玩家控制是否被鎖定
+function isPlayerControlLocked() {
+    return (
+        isPaused ||
+        isGameOver ||
+        isUpgradeActive ||
+        bossIntroActive ||
+        !gameStarted
+    );
+}

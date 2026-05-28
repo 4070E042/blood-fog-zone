@@ -1,13 +1,22 @@
+const LEVEL_EXP_TABLE = [0, 8, 9, 10, 11, 12, 13, 14];
+const PLAYER_MAX_SPEED = 150;
 // ================================
-// Player 宣告
+// 玩家基礎數值
 // ================================
 const PLAYER_BASE = {
     speed: 100,
     health: 100,
     maxHealth: 100,
-    radius: 16
+    radius: 16,
+
+    level: 1,
+    exp: 0,
+    nextExp: LEVEL_EXP_TABLE[1]
 };
 
+// ================================
+// 玩家目前狀態
+// ================================
 const player = {
     x: canvas.width / 2,
     y: canvas.height / 2,
@@ -16,6 +25,9 @@ const player = {
     speed: PLAYER_BASE.speed,
     health: PLAYER_BASE.health,
     maxHealth: PLAYER_BASE.maxHealth,
+    level: PLAYER_BASE.level,
+    exp: PLAYER_BASE.exp,
+    nextExp: PLAYER_BASE.nextExp,
 
     hitCooldown: 0,
     hurtTimer: 0,
@@ -28,6 +40,8 @@ const player = {
     knockbackX: 0,
     knockbackY: 0
 };
+
+
 
 const playerMoveDir = {
     x: 0,
@@ -42,6 +56,9 @@ function resetPlayer() {
     player.maxHealth = PLAYER_BASE.maxHealth;
     player.speed = PLAYER_BASE.speed;
     player.radius = PLAYER_BASE.radius;
+    player.level = PLAYER_BASE.level;
+    player.exp = PLAYER_BASE.exp;
+    player.nextExp = PLAYER_BASE.nextExp;
 
     player.hitCooldown = 0;
     player.hurtTimer = 0;

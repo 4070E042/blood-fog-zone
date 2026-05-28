@@ -21,6 +21,114 @@ function addFloatText(text, life = 1) {
     });
 }
 
+function drawGameBackground() {
+    const time = performance.now() * 0.001;
+    const boss =
+        enemies.find(en => en.type === 'boss' && en.hp > 0);
+    const bossAtmosphere =
+        bossIntroActive || bossFightStarted;
+    const bossFrenzy =
+        boss && boss.bossFrenzied;
+    const timePressure =
+        Math.min(1, Math.max(0, survivalTime) / BOSS_BASE.spawnTime);
+    const phasePressure =
+        Math.min(1, Math.max(0, currentThreatPhase) / 4);
+    const pressure =
+        isPracticeMode
+            ? 0
+            : Math.max(timePressure * 0.65, phasePressure * 0.75);
+    const bossBoost =
+        bossAtmosphere ? 1 : 0;
+    const frenzyBoost =
+        bossFrenzy ? 1 : 0;
+    const baseColor =
+        isPracticeMode
+            ? '#202123'
+            : '#181719';
+    const topHazeAlpha =
+        isPracticeMode
+            ? 0.025
+            : 0.025 + pressure * 0.055 + bossBoost * 0.075 + frenzyBoost * 0.03;
+    const lowHazeAlpha =
+        isPracticeMode
+            ? 0.02
+            : 0.018 + pressure * 0.05 + bossBoost * 0.07 + frenzyBoost * 0.03;
+    const gridAlpha =
+        isPracticeMode
+            ? 0.025
+            : 0.018 + pressure * 0.02 + bossBoost * 0.01;
+    const vignetteAlpha =
+        isPracticeMode
+            ? 0.14
+            : 0.14 + pressure * 0.08 + bossBoost * 0.08 + frenzyBoost * 0.03;
+
+    ctx.save();
+
+    ctx.fillStyle = baseColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    let haze = ctx.createRadialGradient(
+        canvas.width * 0.48,
+        canvas.height * 0.18,
+        0,
+        canvas.width * 0.48,
+        canvas.height * 0.18,
+        canvas.width * 0.58
+    );
+    haze.addColorStop(0, `rgba(120, 0, 22, ${topHazeAlpha})`);
+    haze.addColorStop(1, 'rgba(120, 0, 22, 0)');
+    ctx.fillStyle = haze;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    haze = ctx.createRadialGradient(
+        canvas.width * (0.2 + Math.sin(time * 0.18) * 0.03),
+        canvas.height * 0.72,
+        0,
+        canvas.width * 0.2,
+        canvas.height * 0.72,
+        canvas.width * 0.42
+    );
+    haze.addColorStop(0, `rgba(95, 0, 18, ${lowHazeAlpha})`);
+    haze.addColorStop(1, 'rgba(95, 0, 18, 0)');
+    ctx.fillStyle = haze;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle =
+        isPracticeMode
+            ? `rgba(160, 170, 180, ${gridAlpha})`
+            : `rgba(255, 70, 90, ${gridAlpha})`;
+    ctx.lineWidth = 1;
+
+    for (let y = 0; y <= canvas.height; y += 32) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+    }
+
+    for (let x = 0; x <= canvas.width; x += 32) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+    }
+
+    const vignette = ctx.createRadialGradient(
+        canvas.width * 0.5,
+        canvas.height * 0.45,
+        canvas.width * 0.16,
+        canvas.width * 0.5,
+        canvas.height * 0.45,
+        canvas.width * 0.68
+    );
+    vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vignette.addColorStop(1, `rgba(0, 0, 0, ${vignetteAlpha})`);
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.restore();
+}
+
 function drawGroundCracks() {
     for (let i = groundCracks.length - 1; i >= 0; i--) {
 
