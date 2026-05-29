@@ -63,7 +63,7 @@ const CLASSES = {
     }
 };
 const GAME_BASE = {
-    survivalTime: 290,
+    survivalTime: 0,
 }
 
 // ================================

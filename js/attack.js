@@ -140,8 +140,6 @@ function handleAttackHits() {
 }
 
 
-
-
 function drawAttackCooldown() {
     const cooldownRatio = 1 - attackCooldown / attackCooldownTime;
 

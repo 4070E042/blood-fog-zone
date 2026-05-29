@@ -3,6 +3,9 @@
 // ================================
 const startMenu = document.getElementById('start-menu');
 const startButton = document.getElementById('start-button');
+const gameplayButton = document.getElementById('gameplay-button');
+const gameplayMenu = document.getElementById('gameplay-menu');
+const gameplayBackButton = document.getElementById('gameplay-back-button');
 const practiceStartButton = document.getElementById('practice-start-button');
 
 const classSelectMenu = document.getElementById('class-select-menu');
@@ -47,7 +50,7 @@ const comboDuration = 4;
 // ================================
 // 測試 / 顯示設定
 // ================================
-let botMode = true;
+let botMode = false;
 let showEnemyHpText = false;
 
 
@@ -164,6 +167,7 @@ function resetGame() {
     pauseMenu.style.display = 'none';
     startMenu.style.display = 'none';
     classSelectMenu.style.display = 'none';
+    gameplayMenu.style.display = 'none';
     gameOverMenu.style.display = 'none';
     victoryMenu.style.display = 'none';
     upgradeMenu.style.display = 'none';
@@ -316,6 +320,7 @@ function showClassSelect(practiceMode = false) {
     renderClassSelect();
 
     startMenu.style.display = 'none';
+    gameplayMenu.style.display = 'none';
     gameOverMenu.style.display = 'none';
     victoryMenu.style.display = 'none';
     pauseMenu.style.display = 'none';
@@ -331,12 +336,30 @@ startButton.addEventListener('click', () => {
     showClassSelect(false);
 });
 
+gameplayButton.addEventListener('click', () => {
+    playUIHoverSound(true);
+    startMenu.style.display = 'none';
+    gameplayMenu.style.display = 'flex';
+    canvas.style.cursor = 'auto';
+    document.body.classList.remove('game-playing');
+});
+
+gameplayBackButton.addEventListener('click', () => {
+    playUIHoverSound(true);
+    gameplayMenu.style.display = 'none';
+    startMenu.style.display = 'flex';
+    canvas.style.cursor = 'auto';
+    document.body.classList.remove('game-playing');
+});
+
 practiceStartButton.addEventListener('click', () => {
     playUIHoverSound(true);
     showClassSelect(true);
 });
 
 startButton.addEventListener('mouseenter', playUIHoverSound);
+gameplayButton.addEventListener('mouseenter', playUIHoverSound);
+gameplayBackButton.addEventListener('mouseenter', playUIHoverSound);
 practiceStartButton.addEventListener('mouseenter', playUIHoverSound);
 
 bgmVolumeSlider.addEventListener('input', () => {
@@ -402,6 +425,7 @@ practiceReturnButton.addEventListener('click', () => {
 
     pauseMenu.style.display = 'none';
     classSelectMenu.style.display = 'none';
+    gameplayMenu.style.display = 'none';
     gameOverMenu.style.display = 'none';
     victoryMenu.style.display = 'none';
     upgradeMenu.style.display = 'none';
@@ -451,6 +475,7 @@ function returnToMainMenuFromVictory() {
     gameOverMenu.style.display = 'none';
     pauseMenu.style.display = 'none';
     classSelectMenu.style.display = 'none';
+    gameplayMenu.style.display = 'none';
     upgradeMenu.style.display = 'none';
     startMenu.style.display = 'flex';
 
@@ -486,6 +511,10 @@ function triggerVictory() {
     document.body.classList.remove('game-playing');
 }
 
+
+// ================================
+// 威脅階段
+// ================================
 function showPhaseAlert(title, message) {
     phaseAlertTitle.textContent = `【${title}】`;
     phaseAlertMessage.textContent = message;
@@ -505,15 +534,19 @@ function updateThreatPhase(dt) {
 
     if (survivalTime >= 300 && currentThreatPhase < 4) {
         nextPhase = 4;
+        playZombieMutationSound();
         showPhaseAlert('大型變異反應', 'Boss 即將出現');
     } else if (survivalTime >= 240 && currentThreatPhase < 3) {
         nextPhase = 3;
+        playZombieMutationSound();
         showPhaseAlert('感染失控', '變異體組合壓力上升');
     } else if (survivalTime >= 150 && currentThreatPhase < 2) {
         nextPhase = 2;
+        playZombieMutationSound();
         showPhaseAlert('變異體出現', '地洞殭屍開始活動');
     } else if (survivalTime >= 60 && currentThreatPhase < 1) {
         nextPhase = 1;
+        playZombieMutationSound();
         showPhaseAlert('感染擴散', '跳躍者活動增加，尖叫者開始出現');
     }
 
@@ -1293,812 +1326,8 @@ function resolveEnemySeparation() {
     }
 }
 
-function handleEnemyDeath(en, i) {
-    const defeatedBoss = en.type === 'boss';
 
-    // 爆炸效果
-    if (explosionEnabled && Math.random() < explosionChance) {
 
-        explosions.push({
-            x: en.x,
-            y: en.y,
-            radius: explosionRadius,
-            life: 0.45,
-            maxLife: 0.45
-        });
-
-        for (const other of enemies) {
-
-            if (other.id === en.id) continue;
-
-            const dist = Math.hypot(
-                other.x - en.x,
-                other.y - en.y
-            );
-
-            if (dist <= explosionRadius) {
-
-                other.hp -= explosionDamage;
-
-                floats.push({
-                    x: other.x,
-                    y: other.y - other.radius - 6,
-                    vy: -40,
-                    life: 0.6,
-                    text: `💥${explosionDamage}`
-                });
-            }
-        }
-    }
-
-    comboCount++;
-    comboTimer = comboDuration;
-
-    let expGain = 1;
-
-    if (en.type === 'leaper') {
-        expGain = 2;
-    } else if (en.type === 'screamer') {
-        expGain = 3;
-    } else if (en.type === 'burrower') {
-        expGain = 6;
-    }
-
-    player.exp += expGain;
-    killCount++;
-    healFromBloodRageKill();
-
-    // 顯示 COMBO 數字 
-    // if (comboCount >= 2) {
-
-    //     addFloatText(
-    //         `COMBO x${comboCount}`,
-    //         0.8
-    //     );
-    // }
-
-    deathEffects.push({
-        x: en.x,
-        y: en.y,
-        radius: en.radius,
-        life: 0.35,
-        maxLife: 0.35
-    });
-
-    if (en.type === 'burrower') {
-        burrowSpawnCooldown = 35;
-
-        if (
-            player.isBound &&
-            player.boundEnemyId === en.id
-        ) {
-            player.isBound = false;
-            player.boundEnemyId = null;
-        }
-
-    }
-
-    en.attackState = 'dead';
-    en.attackTimer = 0;
-    en.attackCooldown = 0;
-
-    enemies.splice(i, 1);
-
-    if (defeatedBoss && !isPracticeMode) {
-        bossClearTime = survivalTime;
-        bossFightDuration =
-            bossFightStartTime === null
-                ? 0
-                : Math.max(0, bossClearTime - bossFightStartTime);
-        bossHealthBarVisible = false;
-        bossHealthBarAnim = 0;
-        triggerVictory();
-    }
-}
-
-
-
-
-
-function updateEnemies(dt) {
-
-}
-
-function addCorpseEffect(en) {
-    const pieces = [];
-
-    for (let i = 0; i < 5; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const dist = en.radius * (0.25 + Math.random() * 0.85);
-
-        pieces.push({
-            x: Math.cos(angle) * dist,
-            y: Math.sin(angle) * dist,
-            radius: Math.max(3, en.radius * (0.12 + Math.random() * 0.1))
-        });
-    }
-
-    corpseEffects.push({
-        x: en.x,
-        y: en.y,
-        radius: en.radius,
-        timer: 18.0,
-        duration: 18.0,
-        pieces
-    });
-}
-
-function updateCorpseEffects(dt) {
-    for (let i = corpseEffects.length - 1; i >= 0; i--) {
-        const corpse = corpseEffects[i];
-
-        corpse.timer -= dt;
-
-        if (corpse.timer <= 0) {
-            corpseEffects.splice(i, 1);
-        }
-    }
-}
-
-function updateBossSlamImpactEffects(dt) {
-    for (let i = bossSlamImpactEffects.length - 1; i >= 0; i--) {
-        const fx = bossSlamImpactEffects[i];
-
-        fx.timer -= dt;
-
-        if (fx.timer <= 0) {
-            bossSlamImpactEffects.splice(i, 1);
-        }
-    }
-}
-
-function updateBossFrenzyEffects(dt) {
-    if (bossFrenzyAlertTimer > 0) {
-        bossFrenzyAlertTimer =
-            Math.max(0, bossFrenzyAlertTimer - dt);
-    }
-
-    for (let i = bossFrenzyPulseEffects.length - 1; i >= 0; i--) {
-        const fx = bossFrenzyPulseEffects[i];
-
-        fx.timer -= dt;
-
-        if (fx.timer <= 0) {
-            bossFrenzyPulseEffects.splice(i, 1);
-        }
-    }
-}
-
-function updateBossHealthBar(dt) {
-    const boss =
-        enemies.find(en => en.type === 'boss' && en.hp > 0);
-
-    bossHealthBarVisible =
-        bossFightStarted &&
-        !bossIntroActive &&
-        !!boss;
-
-    if (bossHealthBarVisible) {
-        bossHealthBarAnim =
-            Math.min(1, bossHealthBarAnim + dt * 2.8);
-    } else {
-        bossHealthBarAnim = 0;
-    }
-}
-
-function drawBossHealthBar() {
-    if (!bossHealthBarVisible || bossHealthBarAnim <= 0) return;
-
-    const boss =
-        enemies.find(en => en.type === 'boss' && en.hp > 0);
-
-    if (!boss) return;
-
-    const width =
-        Math.min(620, canvas.width - 80);
-
-    const height = 26;
-    const x = (canvas.width - width) / 2;
-    const targetY = 24;
-    const y = -70 + (targetY + 70) * bossHealthBarAnim;
-    const hpRatio =
-        Math.max(0, Math.min(1, boss.hp / boss.maxHp));
-
-    ctx.save();
-
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
-    ctx.fillRect(x - 10, y - 6, width + 20, height + 26);
-
-    ctx.strokeStyle = '#050000';
-    ctx.lineWidth = 5;
-    ctx.strokeRect(x - 10, y - 6, width + 20, height + 26);
-
-    ctx.font = 'bold 20px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = '#050000';
-    ctx.fillStyle = '#f0d0c8';
-    ctx.strokeText('巨型屠夫', canvas.width / 2, y + 3);
-    ctx.fillText('巨型屠夫', canvas.width / 2, y + 3);
-
-    ctx.fillStyle = '#1b0303';
-    ctx.fillRect(x, y + 19, width, height);
-
-    ctx.fillStyle = '#7f0d16';
-    ctx.fillRect(x, y + 19, width * hpRatio, height);
-
-    ctx.fillStyle = 'rgba(255, 70, 80, 0.32)';
-    ctx.fillRect(x, y + 19, width * hpRatio, 7);
-
-    ctx.strokeStyle = '#050000';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(x, y + 19, width, height);
-
-    ctx.restore();
-}
-
-function drawCorpseEffects() {
-    for (const corpse of corpseEffects) {
-        const fade =
-            Math.max(0, Math.min(1, corpse.timer / corpse.duration));
-
-        ctx.save();
-        ctx.globalAlpha = Math.min(1, fade * 1.25);
-
-        ctx.beginPath();
-        ctx.fillStyle = 'rgba(90, 0, 12, 0.72)';
-        ctx.ellipse(
-            corpse.x,
-            corpse.y + corpse.radius * 0.35,
-            corpse.radius * 1.1,
-            corpse.radius * 0.55,
-            0,
-            0,
-            Math.PI * 2
-        );
-        ctx.fill();
-
-        ctx.fillStyle = 'rgba(45, 0, 6, 0.82)';
-
-        for (const piece of corpse.pieces) {
-            ctx.beginPath();
-            ctx.arc(
-                corpse.x + piece.x,
-                corpse.y + piece.y,
-                piece.radius,
-                0,
-                Math.PI * 2
-            );
-            ctx.fill();
-        }
-
-        ctx.restore();
-    }
-}
-
-function drawBossSlamImpactEffects() {
-    for (const fx of bossSlamImpactEffects) {
-        const progress =
-            1 - Math.max(0, fx.timer) / fx.duration;
-        const alpha =
-            Math.max(0, 1 - progress);
-
-        ctx.save();
-        ctx.translate(fx.x, fx.y);
-        ctx.rotate(fx.angle);
-        ctx.globalAlpha = alpha;
-
-        ctx.beginPath();
-        ctx.strokeStyle = 'rgba(35, 0, 0, 0.95)';
-        ctx.lineWidth = 7;
-        ctx.arc(0, 0, 48 + progress * 80, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.strokeStyle = 'rgba(120, 0, 18, 0.72)';
-        ctx.lineWidth = 4;
-        ctx.arc(0, 0, 32 + progress * 55, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.strokeStyle = 'rgba(20, 0, 0, 0.9)';
-        ctx.lineWidth = 5;
-        ctx.lineCap = 'round';
-
-        for (let i = -2; i <= 2; i++) {
-            const spread = i * 0.26;
-            const start = 20 + Math.abs(i) * 10;
-            const end = bossSlamRange * (0.72 + progress * 0.28);
-
-            ctx.beginPath();
-            ctx.moveTo(
-                Math.cos(spread) * start,
-                Math.sin(spread) * start
-            );
-            ctx.lineTo(
-                Math.cos(spread) * end,
-                Math.sin(spread) * end
-            );
-            ctx.stroke();
-        }
-
-        ctx.restore();
-    }
-}
-
-function drawBossFrenzyPulseEffects() {
-    for (const fx of bossFrenzyPulseEffects) {
-        const progress =
-            1 - Math.max(0, fx.timer) / fx.duration;
-        const alpha =
-            Math.max(0, 1 - progress);
-
-        ctx.save();
-        ctx.globalAlpha = alpha;
-
-        ctx.beginPath();
-        ctx.strokeStyle = 'rgba(180, 0, 28, 0.72)';
-        ctx.lineWidth = 5;
-        ctx.arc(
-            fx.x,
-            fx.y,
-            fx.radius + progress * 150,
-            0,
-            Math.PI * 2
-        );
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.strokeStyle = 'rgba(40, 0, 0, 0.78)';
-        ctx.lineWidth = 9;
-        ctx.arc(
-            fx.x,
-            fx.y,
-            fx.radius * 0.75 + progress * 100,
-            0,
-            Math.PI * 2
-        );
-        ctx.stroke();
-
-        ctx.restore();
-    }
-}
-
-function drawBossAtmosphereOverlay() {
-    if (!bossIntroActive && !bossFightStarted) return;
-
-    const boss =
-        enemies.find(en => en.type === 'boss' && en.hp > 0);
-
-    if (!boss) return;
-
-    const time = performance.now() * 0.001;
-    const frenzyBoost = boss.bossFrenzied ? 1 : 0;
-    const introBoost = bossIntroActive ? 1 : 0;
-    const darkAlpha =
-        0.08 + introBoost * 0.08 + frenzyBoost * 0.05;
-    const redAlpha =
-        0.06 + introBoost * 0.04 + frenzyBoost * 0.08;
-    const fillPad = 80;
-
-    ctx.save();
-
-    ctx.fillStyle = `rgba(12, 0, 4, ${darkAlpha})`;
-    ctx.fillRect(
-        -fillPad,
-        -fillPad,
-        canvas.width + fillPad * 2,
-        canvas.height + fillPad * 2
-    );
-
-    ctx.fillStyle = `rgba(120, 0, 18, ${redAlpha})`;
-    ctx.fillRect(
-        -fillPad,
-        -fillPad,
-        canvas.width + fillPad * 2,
-        canvas.height + fillPad * 2
-    );
-
-    ctx.globalAlpha = 0.12 + frenzyBoost * 0.08;
-    ctx.fillStyle = 'rgba(150, 0, 24, 0.45)';
-
-    for (let i = 0; i < 3; i++) {
-        const phase = time * (0.35 + i * 0.08) + i * 2.1;
-        const x =
-            canvas.width * (0.22 + i * 0.28) +
-            Math.sin(phase) * 34;
-        const y =
-            canvas.height * (0.22 + i * 0.19) +
-            Math.cos(phase * 0.9) * 26;
-        const radiusX =
-            canvas.width * (0.22 + i * 0.03);
-        const radiusY =
-            canvas.height * (0.12 + i * 0.02);
-
-        ctx.beginPath();
-        ctx.ellipse(
-            x,
-            y,
-            radiusX,
-            radiusY,
-            Math.sin(phase) * 0.18,
-            0,
-            Math.PI * 2
-        );
-        ctx.fill();
-    }
-
-    ctx.restore();
-}
-
-function drawBossFrenzyAlert() {
-    if (bossFrenzyAlertTimer <= 0) return;
-
-    const progress =
-        1 - bossFrenzyAlertTimer / 2.2;
-    const alpha =
-        Math.min(1, bossFrenzyAlertTimer / 0.35, 1 - progress * 0.35);
-    const pulse =
-        Math.sin(performance.now() * 0.025) * 0.08;
-
-    ctx.save();
-
-    ctx.fillStyle = `rgba(120, 0, 18, ${0.16 + pulse})`;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = 'bold 42px sans-serif';
-    ctx.lineWidth = 7;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
-    ctx.fillStyle = `rgba(255, 55, 65, ${alpha})`;
-
-    ctx.strokeText(
-        '巨型屠夫狂暴化',
-        canvas.width / 2,
-        canvas.height * 0.34
-    );
-
-    ctx.fillText(
-        '巨型屠夫狂暴化',
-        canvas.width / 2,
-        canvas.height * 0.34
-    );
-
-    ctx.restore();
-}
-
-function startBossBasicAttack(en) {
-    en.bossSkillState = 'basicWindup';
-    en.bossBasicAttackTimer = bossBasicAttackWindupTime;
-    en.bossBasicAttackAngle = Math.atan2(player.y - en.y, player.x - en.x);
-}
-
-function resolveBossBasicAttack(en) {
-    const dx = player.x - en.x;
-    const dy = player.y - en.y;
-    const dist = Math.hypot(dx, dy) || 1;
-    const angle = Math.atan2(dy, dx);
-    const angleDiff =
-        Math.atan2(
-            Math.sin(angle - en.bossBasicAttackAngle),
-            Math.cos(angle - en.bossBasicAttackAngle)
-        );
-
-    screenShake = Math.max(screenShake, 6);
-
-    if (
-        dist <= en.radius + bossBasicAttackRange + player.radius &&
-        Math.abs(angleDiff) <= Math.PI * 0.34
-    ) {
-        damagePlayer(bossBasicAttackDamage);
-
-        player.knockbackX = (dx / dist) * 150;
-        player.knockbackY = (dy / dist) * 150;
-    }
-}
-
-function startBossSlam(en) {
-    en.bossSkillState = 'slamWindup';
-    en.bossSkillTimer = bossSlamWindupTime;
-    en.bossSkillAngle = Math.atan2(player.y - en.y, player.x - en.x);
-    bossHeavySwingSound();
-}
-
-function resolveBossSlam(en) {
-    const dx = player.x - en.x;
-    const dy = player.y - en.y;
-    const dist = Math.hypot(dx, dy) || 1;
-    const angle = Math.atan2(dy, dx);
-    const angleDiff =
-        Math.atan2(
-            Math.sin(angle - en.bossSkillAngle),
-            Math.cos(angle - en.bossSkillAngle)
-        );
-
-    screenShake = Math.max(screenShake, 14);
-
-    bossSlamImpactEffects.push({
-        x: en.x + Math.cos(en.bossSkillAngle) * en.radius,
-        y: en.y + Math.sin(en.bossSkillAngle) * en.radius,
-        angle: en.bossSkillAngle,
-        timer: 0.42,
-        duration: 0.42
-    });
-
-    if (
-        dist <= bossSlamRange + player.radius &&
-        Math.abs(angleDiff) <= bossSlamArc / 2
-    ) {
-        damagePlayer(bossSlamDamage);
-
-        playHeavyHurtSound();
-
-        player.knockbackX = (dx / dist) * 220;
-        player.knockbackY = (dy / dist) * 220;
-    }
-}
-
-function startBossCharge(en) {
-    const dx = player.x - en.x;
-    const dy = player.y - en.y;
-    const len = Math.hypot(dx, dy) || 1;
-
-    en.bossSkillState = 'chargeWindup';
-    en.bossSkillTimer = bossChargeWindupTime;
-    en.bossSkillAngle = Math.atan2(dy, dx);
-    en.bossChargeDirX = dx / len;
-    en.bossChargeDirY = dy / len;
-    en.bossChargeRemaining =
-        Math.min(canvas.width, canvas.height) * bossChargeDistanceRatio;
-    en.bossChargeHit = false;
-}
-
-function updateBossBehavior(en, dt) {
-    if (bossIntroActive) return;
-
-    if (!en.bossSkillState) en.bossSkillState = 'idle';
-    if (en.bossSlamCooldown === undefined) en.bossSlamCooldown = 2.0;
-    if (en.bossChargeCooldown === undefined) en.bossChargeCooldown = 4.0;
-    if (en.bossBasicAttackCooldown === undefined) en.bossBasicAttackCooldown = 0.8;
-    if (en.bossBasicAttackTimer === undefined) en.bossBasicAttackTimer = 0;
-    if (en.baseSpeed === undefined) en.baseSpeed = en.speed;
-
-    const dx = player.x - en.x;
-    const dy = player.y - en.y;
-    const dist = Math.hypot(dx, dy) || 1;
-    const nx = dx / dist;
-    const ny = dy / dist;
-    const frenzyRate = en.bossFrenzied ? 0.75 : 1;
-
-    if (
-        !en.bossFrenzied &&
-        en.hp / en.maxHp <= 0.35
-    ) {
-        en.bossFrenzied = true;
-        bossFrenzyAlertTimer = 2.2;
-        screenShake = Math.max(screenShake, 22);
-
-        bossFrenzyPulseEffects.push({
-            x: en.x,
-            y: en.y,
-            radius: en.radius,
-            timer: 0.9,
-            duration: 0.9
-        });
-    }
-
-    if (en.bossSlamCooldown > 0) {
-        en.bossSlamCooldown = Math.max(0, en.bossSlamCooldown - dt);
-    }
-
-    if (en.bossChargeCooldown > 0) {
-        en.bossChargeCooldown = Math.max(0, en.bossChargeCooldown - dt);
-    }
-
-    if (en.bossBasicAttackCooldown > 0) {
-        en.bossBasicAttackCooldown =
-            Math.max(0, en.bossBasicAttackCooldown - dt);
-    }
-
-    if (en.bossSkillState === 'basicWindup') {
-        en.bossBasicAttackTimer =
-            Math.max(0, en.bossBasicAttackTimer - dt);
-
-        if (en.bossBasicAttackTimer <= 0) {
-            resolveBossBasicAttack(en);
-            en.bossSkillState = 'idle';
-            en.bossBasicAttackCooldown =
-                bossBasicAttackCooldownTime * frenzyRate;
-        }
-
-        return;
-    }
-
-    if (en.bossSkillState === 'slamWindup') {
-        en.bossSkillTimer = Math.max(0, en.bossSkillTimer - dt);
-
-        if (en.bossSkillTimer <= 0) {
-            resolveBossSlam(en);
-            en.bossSkillState = 'idle';
-            en.bossSlamCooldown = bossSlamCooldownTime * frenzyRate;
-        }
-
-        return;
-    }
-
-    if (en.bossSkillState === 'chargeWindup') {
-        en.bossSkillTimer = Math.max(0, en.bossSkillTimer - dt);
-        screenShake = Math.max(screenShake, 2);
-
-        if (en.bossSkillTimer <= 0) {
-            en.bossSkillState = 'charging';
-        }
-
-        return;
-    }
-
-    if (en.bossSkillState === 'charging') {
-        const moveDist =
-            Math.min(bossChargeSpeed * dt, en.bossChargeRemaining);
-
-        en.x += en.bossChargeDirX * moveDist;
-        en.y += en.bossChargeDirY * moveDist;
-        en.bossChargeRemaining -= moveDist;
-
-        screenShake = Math.max(screenShake, 5);
-
-        const hitDist =
-            Math.hypot(player.x - en.x, player.y - en.y);
-
-        if (
-            !en.bossChargeHit &&
-            hitDist <= player.radius + en.radius + 10
-        ) {
-            en.bossChargeHit = true;
-            damagePlayer(bossChargeDamage);
-
-            const hitLen = hitDist || 1;
-            player.knockbackX = ((player.x - en.x) / hitLen) * 260;
-            player.knockbackY = ((player.y - en.y) / hitLen) * 260;
-        }
-
-        const hitWall =
-            en.x <= en.radius ||
-            en.x >= canvas.width - en.radius ||
-            en.y <= en.radius ||
-            en.y >= canvas.height - en.radius;
-
-        en.x = Math.max(en.radius, Math.min(canvas.width - en.radius, en.x));
-        en.y = Math.max(en.radius, Math.min(canvas.height - en.radius, en.y));
-
-        if (hitWall || en.bossChargeRemaining <= 0) {
-            en.bossSkillState = 'idle';
-            en.bossChargeCooldown = bossChargeCooldownTime * frenzyRate;
-            screenShake = Math.max(screenShake, 10);
-        }
-
-        return;
-    }
-
-    const playerMovingAway = playerMoveDir.x * nx + playerMoveDir.y * ny > 0.35;
-
-    // 玩家進入重擊範圍且技能 CD 完成時，開始巨斧重擊前搖
-    if (
-        dist <= bossSlamRange + player.radius + 10 &&
-        en.bossSlamCooldown <= 0
-    ) {
-        startBossSlam(en);
-        return;
-    }
-
-    // 玩家正在拉開距離、位於中距離時，使用衝鋒踐踏逼位
-    if (
-        dist > bossSlamRange + 35 &&
-        dist < 380 &&
-        playerMovingAway &&
-        en.bossChargeCooldown <= 0
-    ) {
-        startBossCharge(en);
-        return;
-    }
-
-    if (
-        dist <= en.radius + bossBasicAttackRange + player.radius &&
-        en.bossBasicAttackCooldown <= 0
-    ) {
-        startBossBasicAttack(en);
-        return;
-    }
-
-    const moveSpeed =
-        (en.baseSpeed || en.speed) * (en.bossFrenzied ? 1.2 : 1);
-
-    en.x += nx * moveSpeed * dt;
-    en.y += ny * moveSpeed * dt;
-
-    handleEnemyPush(en, dt);
-}
-
-function drawBossIntroRing() {
-    if (!bossIntroActive) return;
-
-    const boss = enemies.find(en => en.type === 'boss');
-    if (!boss) return;
-
-    const progress =
-        1 - Math.max(0, bossIntroTimer) / bossIntroDuration;
-
-    const radius =
-        boss.radius * 1.4 + progress * 120;
-
-    const alpha =
-        0.55 * (1 - progress * 0.45);
-
-    ctx.save();
-
-    ctx.beginPath();
-    ctx.strokeStyle = `rgba(255, 20, 40, ${alpha})`;
-    ctx.lineWidth = 5;
-    ctx.arc(
-        boss.x,
-        boss.y,
-        radius,
-        0,
-        Math.PI * 2
-    );
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.fillStyle = `rgba(180, 0, 20, ${0.12 * (1 - progress)})`;
-    ctx.arc(
-        boss.x,
-        boss.y,
-        radius * 0.65,
-        0,
-        Math.PI * 2
-    );
-    ctx.fill();
-
-    ctx.restore();
-}
-
-function drawBossIntroOverlay() {
-    if (!bossIntroActive) return;
-
-    const progress =
-        1 - Math.max(0, bossIntroTimer) / bossIntroDuration;
-
-    const pulse =
-        Math.sin(performance.now() * 0.012) * 0.08;
-
-    ctx.save();
-
-    ctx.fillStyle = `rgba(0, 0, 0, ${0.45 + pulse})`;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    ctx.font = 'bold 46px sans-serif';
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
-    ctx.fillStyle = `rgba(255, 40, 55, ${0.85 + progress * 0.15})`;
-
-    ctx.strokeText(
-        '巨型屠夫',
-        canvas.width / 2,
-        canvas.height / 2
-    );
-
-    ctx.fillText(
-        '巨型屠夫',
-        canvas.width / 2,
-        canvas.height / 2
-    );
-
-    ctx.restore();
-}
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -2148,8 +1377,6 @@ function draw() {
 
     drawFloatingTexts();
 }
-
-
 
 function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000);

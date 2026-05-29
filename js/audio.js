@@ -14,7 +14,9 @@ const deathAudio = new Audio('sounds/death.mp3');
 const burrowAudio = new Audio('sounds/burrow.mp3');
 const screamAudio = new Audio('sounds/scream.mp3');
 const levelUpAudio = new Audio('sounds/levelup.mp3');
+
 const uiHoverAudio = new Audio('sounds/ui_hover.mp3');
+const zombieMutationAudio = new Audio('sounds/zombie_mutation.mp3');
 let lastUIHoverSoundTime = 0;
 
 // 回血音效
@@ -145,6 +147,15 @@ function playZombieSound() {
 
     try {
         playSFX(audio);
+
+    } catch (e) { }
+
+}
+
+function playZombieMutationSound() {
+
+    try {
+        playSFX(zombieMutationAudio);
 
     } catch (e) { }
 

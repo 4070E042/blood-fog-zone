@@ -5,8 +5,8 @@ const PLAYER_MAX_SPEED = 150;
 // ================================
 const PLAYER_BASE = {
     speed: 100,
-    health: 300,
-    maxHealth: 300,
+    health: 100,
+    maxHealth: 100,
     radius: 16,
 
     level: 1,

@@ -30,8 +30,57 @@
             />
             <div class="main-menu-actions">
                 <button id="start-button">開始遊戲</button>
-                <button id="practice-start-button">練習模式</button>
+                <button id="gameplay-button">遊戲玩法</button>
+                <button id="practice-start-button" hidden>練習模式</button>
             </div>
+        </div>
+    </div>
+    <div id="gameplay-menu" style="display:none;">
+        <div id="gameplay-panel">
+            <h1>遊戲玩法</h1>
+
+            <section class="gameplay-section">
+                <h2>遊戲目標</h2>
+                <p>你是一名受困於血霧禁區的倖存者。</p>
+                <p>擊殺殭屍獲得經驗值，升級後選擇能力強化自己。</p>
+                <p>生存至 300 秒後，巨型屠夫將現身。</p>
+                <p>擊敗巨型屠夫即可獲得勝利。</p>
+            </section>
+
+            <section class="gameplay-section">
+                <h2>操作方式</h2>
+                <p>WASD：移動</p>
+                <p>滑鼠：瞄準方向</p>
+                <p>空白鍵：衝刺</p>
+                <p>ESC：暫停遊戲</p>
+            </section>
+
+            <section class="gameplay-section">
+                <h2>升級選擇</h2>
+                <p>升級後可獲得隨機強化。</p>
+                <p>包含傷害提升、攻速提升、攻擊範圍提升、移動速度提升，以及特殊能力。</p>
+            </section>
+
+            <section class="gameplay-section">
+                <h2>特殊敵人</h2>
+                <p>戰場中會出現不同顏色的變異殭屍。</p>
+                <p>牠們擁有不同特性：</p>
+                <ul>
+                    <li>有些會快速接近你</li>
+                    <li>有些會製造戰場壓力</li>
+                    <li>有些會從地底突襲並限制行動</li>
+                </ul>
+                <p>請觀察牠們的顏色與行動方式。</p>
+            </section>
+
+            <section class="gameplay-section">
+                <h2>勝利條件</h2>
+                <p>生存至 Boss 出現。</p>
+                <p>擊敗巨型屠夫。</p>
+                <p>Boss 戰耗時越短，最終評級越高。</p>
+            </section>
+
+            <button id="gameplay-back-button">返回</button>
         </div>
     </div>
     <div id="class-select-menu" style="display:none;">
@@ -332,6 +381,7 @@
     <script src="js/player.js"></script>
     <script src="js/enemy.js"></script>
     <script src="js/bot.js"></script>
+    <script src="js/boss.js"></script>
     <script src="js/upgrades.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/attack.js"></script>

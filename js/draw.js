@@ -778,50 +778,7 @@ function drawEnemyHealthBar(en) {
         );
     }
 }
-function updateBossIntro(dt) {
-    if (!bossIntroActive) return false;
 
-    bossIntroTimer = Math.max(0, bossIntroTimer - dt);
-    screenShake = Math.max(screenShake, 3);
-
-    if (bossIntroTimer <= 0) {
-        finishBossIntro();
-        playBossBGM();
-    }
-
-    updateHUD();
-    return true;
-}
-
-function finishBossIntro() {
-    bossIntroActive = false;
-    bossFightStarted = true;
-    bossFightStartTime = survivalTime;
-    bossClearTime = null;
-    bossFightDuration = 0;
-    bossHealthBarVisible = true;
-    bossHealthBarAnim = 0;
-
-    screenShake = Math.max(screenShake, 16);
-
-    player.health = player.maxHealth;
-
-    for (let i = enemies.length - 1; i >= 0; i--) {
-        if (enemies[i].type !== 'boss') {
-            addCorpseEffect(enemies[i]);
-
-            deathEffects.push({
-                x: enemies[i].x,
-                y: enemies[i].y,
-                radius: enemies[i].radius,
-                life: 0.35,
-                maxLife: 0.35
-            });
-
-            enemies.splice(i, 1);
-        }
-    }
-}
 
 function applyScreenShake() {
     if (screenShake > 0) {
@@ -1289,7 +1246,6 @@ function drawPlayer() {
 }
 
 // ================================
-// Orbit Skill
 // 繪製量子刃輪
 // ================================
 function drawOrbitSkill() {
@@ -1328,6 +1284,391 @@ function drawOrbitSkill() {
         ctx.restore();
     }
 }
+
+
+
+
+// ================================
+// BOSS｜登場演出
+// ================================
+function drawBossIntroRing() {
+    if (!bossIntroActive) return;
+
+    const boss = enemies.find(en => en.type === 'boss');
+    if (!boss) return;
+
+    const progress =
+        1 - Math.max(0, bossIntroTimer) / bossIntroDuration;
+
+    const radius =
+        boss.radius * 1.4 + progress * 120;
+
+    const alpha =
+        0.55 * (1 - progress * 0.45);
+
+    ctx.save();
+
+    ctx.beginPath();
+    ctx.strokeStyle = `rgba(255, 20, 40, ${alpha})`;
+    ctx.lineWidth = 5;
+    ctx.arc(
+        boss.x,
+        boss.y,
+        radius,
+        0,
+        Math.PI * 2
+    );
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(180, 0, 20, ${0.12 * (1 - progress)})`;
+    ctx.arc(
+        boss.x,
+        boss.y,
+        radius * 0.65,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
+
+    ctx.restore();
+}
+function drawBossIntroOverlay() {
+    if (!bossIntroActive) return;
+
+    const progress =
+        1 - Math.max(0, bossIntroTimer) / bossIntroDuration;
+
+    const pulse =
+        Math.sin(performance.now() * 0.012) * 0.08;
+
+    ctx.save();
+
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.45 + pulse})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    ctx.font = 'bold 46px sans-serif';
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.fillStyle = `rgba(255, 40, 55, ${0.85 + progress * 0.15})`;
+
+    ctx.strokeText(
+        '巨型屠夫',
+        canvas.width / 2,
+        canvas.height / 2
+    );
+
+    ctx.fillText(
+        '巨型屠夫',
+        canvas.width / 2,
+        canvas.height / 2
+    );
+
+    ctx.restore();
+}
+
+
+// ================================
+// BOSS｜UI
+// ================================
+function drawBossHealthBar() {
+    if (!bossHealthBarVisible || bossHealthBarAnim <= 0) return;
+
+    const boss =
+        enemies.find(en => en.type === 'boss' && en.hp > 0);
+
+    if (!boss) return;
+
+    const width =
+        Math.min(620, canvas.width - 80);
+
+    const height = 26;
+    const x = (canvas.width - width) / 2;
+    const targetY = 24;
+    const y = -70 + (targetY + 70) * bossHealthBarAnim;
+    const hpRatio =
+        Math.max(0, Math.min(1, boss.hp / boss.maxHp));
+
+    ctx.save();
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
+    ctx.fillRect(x - 10, y - 6, width + 20, height + 26);
+
+    ctx.strokeStyle = '#050000';
+    ctx.lineWidth = 5;
+    ctx.strokeRect(x - 10, y - 6, width + 20, height + 26);
+
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#050000';
+    ctx.fillStyle = '#f0d0c8';
+    ctx.strokeText('巨型屠夫', canvas.width / 2, y + 3);
+    ctx.fillText('巨型屠夫', canvas.width / 2, y + 3);
+
+    ctx.fillStyle = '#1b0303';
+    ctx.fillRect(x, y + 19, width, height);
+
+    ctx.fillStyle = '#7f0d16';
+    ctx.fillRect(x, y + 19, width * hpRatio, height);
+
+    ctx.fillStyle = 'rgba(255, 70, 80, 0.32)';
+    ctx.fillRect(x, y + 19, width * hpRatio, 7);
+
+    ctx.strokeStyle = '#050000';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(x, y + 19, width, height);
+
+    ctx.restore();
+}
+
+// ================================
+// BOSS｜戰鬥氣氛
+// ================================
+function drawBossAtmosphereOverlay() {
+    if (!bossIntroActive && !bossFightStarted) return;
+
+    const boss =
+        enemies.find(en => en.type === 'boss' && en.hp > 0);
+
+    if (!boss) return;
+
+    const time = performance.now() * 0.001;
+    const frenzyBoost = boss.bossFrenzied ? 1 : 0;
+    const introBoost = bossIntroActive ? 1 : 0;
+    const darkAlpha =
+        0.08 + introBoost * 0.08 + frenzyBoost * 0.05;
+    const redAlpha =
+        0.06 + introBoost * 0.04 + frenzyBoost * 0.08;
+    const fillPad = 80;
+
+    ctx.save();
+
+    ctx.fillStyle = `rgba(12, 0, 4, ${darkAlpha})`;
+    ctx.fillRect(
+        -fillPad,
+        -fillPad,
+        canvas.width + fillPad * 2,
+        canvas.height + fillPad * 2
+    );
+
+    ctx.fillStyle = `rgba(120, 0, 18, ${redAlpha})`;
+    ctx.fillRect(
+        -fillPad,
+        -fillPad,
+        canvas.width + fillPad * 2,
+        canvas.height + fillPad * 2
+    );
+
+    ctx.globalAlpha = 0.12 + frenzyBoost * 0.08;
+    ctx.fillStyle = 'rgba(150, 0, 24, 0.45)';
+
+    for (let i = 0; i < 3; i++) {
+        const phase = time * (0.35 + i * 0.08) + i * 2.1;
+        const x =
+            canvas.width * (0.22 + i * 0.28) +
+            Math.sin(phase) * 34;
+        const y =
+            canvas.height * (0.22 + i * 0.19) +
+            Math.cos(phase * 0.9) * 26;
+        const radiusX =
+            canvas.width * (0.22 + i * 0.03);
+        const radiusY =
+            canvas.height * (0.12 + i * 0.02);
+
+        ctx.beginPath();
+        ctx.ellipse(
+            x,
+            y,
+            radiusX,
+            radiusY,
+            Math.sin(phase) * 0.18,
+            0,
+            Math.PI * 2
+        );
+        ctx.fill();
+    }
+
+    ctx.restore();
+}
+
+// ================================
+// BOSS｜Frenzy
+// ================================
+function drawBossFrenzyPulseEffects() {
+    for (const fx of bossFrenzyPulseEffects) {
+        const progress =
+            1 - Math.max(0, fx.timer) / fx.duration;
+        const alpha =
+            Math.max(0, 1 - progress);
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(180, 0, 28, 0.72)';
+        ctx.lineWidth = 5;
+        ctx.arc(
+            fx.x,
+            fx.y,
+            fx.radius + progress * 150,
+            0,
+            Math.PI * 2
+        );
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(40, 0, 0, 0.78)';
+        ctx.lineWidth = 9;
+        ctx.arc(
+            fx.x,
+            fx.y,
+            fx.radius * 0.75 + progress * 100,
+            0,
+            Math.PI * 2
+        );
+        ctx.stroke();
+
+        ctx.restore();
+    }
+}
+function drawBossFrenzyAlert() {
+    if (bossFrenzyAlertTimer <= 0) return;
+
+    const progress =
+        1 - bossFrenzyAlertTimer / 2.2;
+    const alpha =
+        Math.min(1, bossFrenzyAlertTimer / 0.35, 1 - progress * 0.35);
+    const pulse =
+        Math.sin(performance.now() * 0.025) * 0.08;
+
+    ctx.save();
+
+    ctx.fillStyle = `rgba(120, 0, 18, ${0.16 + pulse})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 42px sans-serif';
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+    ctx.fillStyle = `rgba(255, 55, 65, ${alpha})`;
+
+    ctx.strokeText(
+        '巨型屠夫狂暴化',
+        canvas.width / 2,
+        canvas.height * 0.34
+    );
+
+    ctx.fillText(
+        '巨型屠夫狂暴化',
+        canvas.width / 2,
+        canvas.height * 0.34
+    );
+
+    ctx.restore();
+}
+
+// ================================
+// BOSS｜Slam
+// ================================
+function drawBossSlamImpactEffects() {
+    for (const fx of bossSlamImpactEffects) {
+        const progress =
+            1 - Math.max(0, fx.timer) / fx.duration;
+        const alpha =
+            Math.max(0, 1 - progress);
+
+        ctx.save();
+        ctx.translate(fx.x, fx.y);
+        ctx.rotate(fx.angle);
+        ctx.globalAlpha = alpha;
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(35, 0, 0, 0.95)';
+        ctx.lineWidth = 7;
+        ctx.arc(0, 0, 48 + progress * 80, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(120, 0, 18, 0.72)';
+        ctx.lineWidth = 4;
+        ctx.arc(0, 0, 32 + progress * 55, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(20, 0, 0, 0.9)';
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+
+        for (let i = -2; i <= 2; i++) {
+            const spread = i * 0.26;
+            const start = 20 + Math.abs(i) * 10;
+            const end = bossSlamRange * (0.72 + progress * 0.28);
+
+            ctx.beginPath();
+            ctx.moveTo(
+                Math.cos(spread) * start,
+                Math.sin(spread) * start
+            );
+            ctx.lineTo(
+                Math.cos(spread) * end,
+                Math.sin(spread) * end
+            );
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+}
+
+// ================================
+// BOSS｜死亡特效
+// ================================
+function drawCorpseEffects() {
+    for (const corpse of corpseEffects) {
+        const fade =
+            Math.max(0, Math.min(1, corpse.timer / corpse.duration));
+
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, fade * 1.25);
+
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(90, 0, 12, 0.72)';
+        ctx.ellipse(
+            corpse.x,
+            corpse.y + corpse.radius * 0.35,
+            corpse.radius * 1.1,
+            corpse.radius * 0.55,
+            0,
+            0,
+            Math.PI * 2
+        );
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(45, 0, 6, 0.82)';
+
+        for (const piece of corpse.pieces) {
+            ctx.beginPath();
+            ctx.arc(
+                corpse.x + piece.x,
+                corpse.y + piece.y,
+                piece.radius,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+}
+
+
+
 
 
 

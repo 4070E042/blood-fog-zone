@@ -472,3 +472,95 @@ function damagePlayer(damage) {
         triggerGameOver();
     }
 }
+function handleEnemyDeath(en, i) {
+    const defeatedBoss = en.type === 'boss';
+
+    // 爆炸效果
+    if (explosionEnabled && Math.random() < explosionChance) {
+
+        explosions.push({
+            x: en.x,
+            y: en.y,
+            radius: explosionRadius,
+            life: 0.45,
+            maxLife: 0.45
+        });
+
+        for (const other of enemies) {
+
+            if (other.id === en.id) continue;
+
+            const dist = Math.hypot(
+                other.x - en.x,
+                other.y - en.y
+            );
+
+            if (dist <= explosionRadius) {
+
+                other.hp -= explosionDamage;
+
+                floats.push({
+                    x: other.x,
+                    y: other.y - other.radius - 6,
+                    vy: -40,
+                    life: 0.6,
+                    text: `💥${explosionDamage}`
+                });
+            }
+        }
+    }
+
+    let expGain = 1;
+
+    if (en.type === 'leaper') {
+        expGain = 2;
+    } else if (en.type === 'screamer') {
+        expGain = 3;
+    } else if (en.type === 'burrower') {
+        expGain = 6;
+    }
+
+    player.exp += expGain;
+    killCount++;
+    healFromBloodRageKill();
+
+    addCorpseEffect(en);
+
+    deathEffects.push({
+        x: en.x,
+        y: en.y,
+        radius: en.radius,
+        life: 0.35,
+        maxLife: 0.35
+    });
+
+    if (en.type === 'burrower') {
+        burrowSpawnCooldown = 35;
+
+        if (
+            player.isBound &&
+            player.boundEnemyId === en.id
+        ) {
+            player.isBound = false;
+            player.boundEnemyId = null;
+        }
+
+    }
+
+    en.attackState = 'dead';
+    en.attackTimer = 0;
+    en.attackCooldown = 0;
+
+    enemies.splice(i, 1);
+
+    if (defeatedBoss && !isPracticeMode) {
+        bossClearTime = survivalTime;
+        bossFightDuration =
+            bossFightStartTime === null
+                ? 0
+                : Math.max(0, bossClearTime - bossFightStartTime);
+        bossHealthBarVisible = false;
+        bossHealthBarAnim = 0;
+        triggerVictory();
+    }
+}

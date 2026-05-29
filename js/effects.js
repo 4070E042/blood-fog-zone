@@ -688,3 +688,76 @@ function updateExplosions(dt) {
         }
     }
 }
+
+
+// ================================
+// BOSS｜巨型屠夫
+// ================================
+// Create
+function addCorpseEffect(en, duration = 18.0) {
+    const pieces = [];
+
+    for (let i = 0; i < 5; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = en.radius * (0.25 + Math.random() * 0.85);
+
+        pieces.push({
+            x: Math.cos(angle) * dist,
+            y: Math.sin(angle) * dist,
+            radius: Math.max(3, en.radius * (0.12 + Math.random() * 0.1))
+        });
+    }
+
+    corpseEffects.push({
+        x: en.x,
+        y: en.y,
+        radius: en.radius,
+        timer: duration,
+        duration: duration,
+        pieces
+    });
+}
+
+// Update
+function updateCorpseEffects(dt) {
+    for (let i = corpseEffects.length - 1; i >= 0; i--) {
+        const corpse = corpseEffects[i];
+
+        if (bossFightStarted) {
+            // Boss戰期間屍體不倒數
+            return;
+        }
+        corpse.timer -= dt;
+
+        if (corpse.timer <= 0) {
+            corpseEffects.splice(i, 1);
+        }
+    }
+}
+function updateBossSlamImpactEffects(dt) {
+    for (let i = bossSlamImpactEffects.length - 1; i >= 0; i--) {
+        const fx = bossSlamImpactEffects[i];
+
+        fx.timer -= dt;
+
+        if (fx.timer <= 0) {
+            bossSlamImpactEffects.splice(i, 1);
+        }
+    }
+}
+function updateBossFrenzyEffects(dt) {
+    if (bossFrenzyAlertTimer > 0) {
+        bossFrenzyAlertTimer =
+            Math.max(0, bossFrenzyAlertTimer - dt);
+    }
+
+    for (let i = bossFrenzyPulseEffects.length - 1; i >= 0; i--) {
+        const fx = bossFrenzyPulseEffects[i];
+
+        fx.timer -= dt;
+
+        if (fx.timer <= 0) {
+            bossFrenzyPulseEffects.splice(i, 1);
+        }
+    }
+}
