@@ -111,12 +111,14 @@ function handleAttackHits() {
 
             if (en.type === 'screamer') {
 
-                en.fleeTimer = SCREAMER.fleeTime;
+                const screamerBase = ENEMY_BASE.screamer;
+
+                en.fleeTimer = screamerBase.fleeTime;
 
                 if (en.isScreaming) {
                     en.isScreaming = false;
-                    en.screamTimer = SCREAMER.screamChargeTime;;
-                    en.screamCooldown = SCREAMER.screamCooldown;
+                    en.screamTimer = screamerBase.screamChargeTime;
+                    en.screamCooldown = screamerBase.screamCooldown;
 
                     floats.push({
                         x: en.x,

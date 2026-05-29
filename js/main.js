@@ -42,12 +42,6 @@ const phaseAlertMessage = document.getElementById('phase-alert-message');
 
 
 // ================================
-// Combo
-// ================================
-const comboDuration = 4;
-
-
-// ================================
 // 測試 / 顯示設定
 // ================================
 let botMode = false;
@@ -113,6 +107,8 @@ function triggerGameOver() {
 
 function resetGame() {
     playBGM();
+    stopBossBGM();
+
     // ================================
     // 遊戲流程
     // ================================
@@ -126,7 +122,7 @@ function resetGame() {
 
 
     // ================================
-    // 分數 / 時間
+    // 分數 / 時間 / 經驗
     // ================================
     survivalTime = GAME_BASE.survivalTime;
     killCount = 0;
@@ -135,21 +131,20 @@ function resetGame() {
     player.exp = 0;
     player.nextExp = 8;
 
-    // ================================
-    // Combo
-    // ================================
-    comboCount = 0;
-    comboTimer = 0;
-
 
     // ================================
-    // 畫面效果
+    // 畫面效果 / 威脅階段
     // ================================
     screenShake = 0;
     upgradeEffectTimer = 0;
+
     currentThreatPhase = 0;
     phaseAlertTimer = 0;
 
+
+    // ================================
+    // Boss 狀態
+    // ================================
     bossSpawned = BOSS_STATE.spawned;
     bossIntroActive = BOSS_STATE.introActive;
     bossIntroTimer = BOSS_STATE.introTimer;
@@ -157,12 +152,15 @@ function resetGame() {
     bossFightStartTime = BOSS_STATE.fightStartTime;
     bossClearTime = BOSS_STATE.clearTime;
     bossFightDuration = BOSS_STATE.fightDuration;
+
     bossHealthBarVisible = BOSS_STATE.healthBarVisible;
     bossHealthBarAnim = BOSS_STATE.healthBarAnim;
 
+    bossFrenzyAlertTimer = 0;
+
 
     // ================================
-    // UI
+    // UI 顯示狀態
     // ================================
     pauseMenu.style.display = 'none';
     startMenu.style.display = 'none';
@@ -171,6 +169,7 @@ function resetGame() {
     gameOverMenu.style.display = 'none';
     victoryMenu.style.display = 'none';
     upgradeMenu.style.display = 'none';
+
     isPracticeExitMenuOpen = false;
     updatePracticeExitMenu();
 
@@ -178,7 +177,6 @@ function resetGame() {
     updatePhaseAlert();
 
     canvas.style.cursor = 'none';
-
     document.body.classList.add('game-playing');
 
 
@@ -187,8 +185,9 @@ function resetGame() {
     // ================================
     resetPlayer();
 
+
     // ================================
-    // 能力卡
+    // 能力卡等級
     // ================================
     speedLevel = 0;
     damageLevel = 0;
@@ -197,7 +196,7 @@ function resetGame() {
 
 
     // ================================
-    // 攻擊系統
+    // 基礎攻擊
     // ================================
     stickDamage = 10;
     stickRange = 26;
@@ -207,31 +206,58 @@ function resetGame() {
 
     isSwinging = false;
     swingProgress = 0;
-
     swingHitSet.clear();
 
+
+    // ================================
+    // Blood Rage（E）
+    // ================================
     bloodRageActive = false;
     bloodRageUnlocked = false;
     bloodRageLevel = 0;
     bloodRageTimer = 0;
     bloodRageCooldownTimer = 0;
     bloodRageBaseStickRange = 0;
+
+
+    // ================================
+    // Blood Step（SPACE）
+    // ================================
     bloodStepUnlocked = false;
     bloodStepLevel = 0;
     bloodStepCooldownTimer = 0;
+
+
+    // ================================
+    // Bone Breaker（R）
+    // ================================
     boneBreakerUnlocked = false;
     boneBreakerLevel = 0;
     boneBreakerCooldownTimer = 0;
     boneBreakerWindupTimer = 0;
     boneBreakerPending = null;
+
+
+    // ================================
+    // Explosion（被動）
+    // ================================
     explosionEnabled = false;
     explosionLevel = 0;
     explosionRadius = 70;
     explosionDamage = 4;
 
+
+    // ================================
+    // Blood Execution（被動）
+    // ================================
     bloodExecutionValue = 0;
     bloodExecutionWasFull = false;
     bloodExecutionCombatTimer = 0;
+
+
+    // ================================
+    // Build / Skill 狀態
+    // ================================
     updateAttackCooldownTime();
 
     activeBuilds.length = 0;
@@ -239,7 +265,7 @@ function resetGame() {
 
 
     // ================================
-    // 敵人系統
+    // 敵人生成系統
     // ================================
     spawnTimer = 0;
 
@@ -254,17 +280,17 @@ function resetGame() {
 
 
     // ================================
-    // 場上物件
+    // 場上物件 / 特效
     // ================================
     healthPackTimer = 0;
 
     healthPacks.length = 0;
     floats.length = 0;
     corpseEffects.length = 0;
+    deathEffects.length = 0;
+
     bossSlamImpactEffects.length = 0;
     bossFrenzyPulseEffects.length = 0;
-    bossFrenzyAlertTimer = 0;
-    deathEffects.length = 0;
 
 
     // ================================
@@ -487,7 +513,6 @@ function returnToMainMenuFromVictory() {
     document.body.classList.remove('game-playing');
 }
 
-
 function triggerVictory() {
     if (isVictory) return;
 
@@ -510,54 +535,6 @@ function triggerVictory() {
     canvas.style.cursor = 'auto';
     document.body.classList.remove('game-playing');
 }
-
-
-// ================================
-// 威脅階段
-// ================================
-function showPhaseAlert(title, message) {
-    phaseAlertTitle.textContent = `【${title}】`;
-    phaseAlertMessage.textContent = message;
-    phaseAlertTimer = 3;
-    updatePhaseAlert();
-}
-
-function updatePhaseAlert() {
-    phaseAlert.style.display =
-        phaseAlertTimer > 0 ? 'block' : 'none';
-}
-
-function updateThreatPhase(dt) {
-    if (isPracticeMode) return;
-
-    let nextPhase = currentThreatPhase;
-
-    if (survivalTime >= 300 && currentThreatPhase < 4) {
-        nextPhase = 4;
-        playZombieMutationSound();
-        showPhaseAlert('大型變異反應', 'Boss 即將出現');
-    } else if (survivalTime >= 240 && currentThreatPhase < 3) {
-        nextPhase = 3;
-        playZombieMutationSound();
-        showPhaseAlert('感染失控', '變異體組合壓力上升');
-    } else if (survivalTime >= 150 && currentThreatPhase < 2) {
-        nextPhase = 2;
-        playZombieMutationSound();
-        showPhaseAlert('變異體出現', '地洞殭屍開始活動');
-    } else if (survivalTime >= 60 && currentThreatPhase < 1) {
-        nextPhase = 1;
-        playZombieMutationSound();
-        showPhaseAlert('感染擴散', '跳躍者活動增加，尖叫者開始出現');
-    }
-
-    currentThreatPhase = nextPhase;
-
-    if (phaseAlertTimer > 0) {
-        phaseAlertTimer = Math.max(0, phaseAlertTimer - dt);
-        updatePhaseAlert();
-    }
-}
-
 
 let last = performance.now();
 
@@ -617,17 +594,7 @@ function update(dt) {
     }
 
 
-    // ================================
-    // Combo 計時
-    // ================================
-    if (comboTimer > 0) {
 
-        comboTimer -= dt;
-
-        if (comboTimer <= 0) {
-            comboCount = 0;
-        }
-    }
 
 
     // ================================
@@ -1017,8 +984,10 @@ function update(dt) {
             }
         } else if (en.type === 'screamer') {
 
-            const screamRange = SCREAMER.screamRange;
-            const alertRange = SCREAMER.alertRange;
+            const screamerBase = ENEMY_BASE.screamer;
+
+            const screamRange = screamerBase.screamRange;
+            const alertRange = screamerBase.alertRange;
 
             en.isAlerted = distToPlayer <= alertRange;
 
@@ -1032,10 +1001,10 @@ function update(dt) {
                 if (en.screamTimer <= 0) {
 
                     en.isScreaming = false;
-                    en.screamCooldown = SCREAMER.screamCooldown;
+                    en.screamCooldown = screamerBase.screamCooldown;
 
                     // 召喚殭屍
-                    for (let s = 0; s < SCREAMER.summonCount; s++) {
+                    for (let s = 0; s < screamerBase.summonCount; s++) {
                         spawnEnemy(false);
                     }
                 }
@@ -1046,7 +1015,7 @@ function update(dt) {
             ) {
 
                 en.isScreaming = true;
-                en.screamTimer = SCREAMER.screamChargeTime;
+                en.screamTimer = screamerBase.screamChargeTime;
 
                 playScreamSound();
 
@@ -1056,6 +1025,15 @@ function update(dt) {
 
                 en.x -= (dx / len) * en.speed * 1.4 * dt;
                 en.y -= (dy / len) * en.speed * 1.4 * dt;
+
+                en.x = Math.max(en.radius, Math.min(canvas.width - en.radius, en.x));
+                en.y = Math.max(en.radius, Math.min(canvas.height - en.radius, en.y));
+
+            } else if (en.isAlerted) {
+
+                // 警戒後靠近玩家
+                en.x += (dx / len) * en.speed * dt;
+                en.y += (dy / len) * en.speed * dt;
 
                 en.x = Math.max(en.radius, Math.min(canvas.width - en.radius, en.x));
                 en.y = Math.max(en.radius, Math.min(canvas.height - en.radius, en.y));
@@ -1277,26 +1255,6 @@ function update(dt) {
 
 
 
-function getCurrentSpawnInterval() {
-
-    if (survivalTime < 60) {
-        return 1.8 - survivalTime * 0.0035;
-    }
-
-    if (survivalTime < 150) {
-        return 1.59 - (survivalTime - 60) * 0.0025;
-    }
-
-    if (survivalTime < 240) {
-        return 1.365 - (survivalTime - 150) * 0.0026;
-    }
-
-    return Math.max(
-        0.8,
-        1.13 - (survivalTime - 240) * 0.0022
-    );
-}
-
 function resolveEnemySeparation() {
     // 敵人互相推開，避免全部疊成一團
     for (let i = 0; i < enemies.length; i++) {
@@ -1325,8 +1283,6 @@ function resolveEnemySeparation() {
         }
     }
 }
-
-
 
 
 function draw() {

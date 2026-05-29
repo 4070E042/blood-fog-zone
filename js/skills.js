@@ -16,41 +16,49 @@ let stretchLevel = 0;
 let stretchCooldown = 0;
 
 const stretchCooldownTime = 2;
+// ================================
+// Blood Step（SPACE）
+// ================================
 let bloodStepUnlocked = false;
 let bloodStepLevel = 0;
 let bloodStepCooldownTimer = 0;
 
 const bloodStepMaxLevel = 5;
-const bloodStepCooldownByLevel = [0, 8.0, 6.8, 5.6, 4.8, 4.0];
-const bloodStepDistance = 95;
-const bloodRageAttackCooldownMultiplier = 0.7;
-const bloodRageRangeBonus = 20;
-const bloodRageHealOnKill = 2;
-const bloodExecutionMaxHealOnHit = 0.4;
+const bloodStepCooldownByLevel = [0, 8.0, 6.8, 5.6, 4.8, 4.0];  // 各等級冷卻時間
+const bloodStepDistance = 95;   // 固定突進距離
+
+// ================================
+// Blood Rage（E）
+// ================================
+const bloodRageAttackCooldownMultiplier = 0.7;  // 攻擊冷卻倍率（越小攻速越快）
+const bloodRageRangeBonus = 20; // 額外攻擊範圍
+const bloodRageHealOnKill = 2;  // 狂暴期間擊殺回血
+const bloodExecutionMaxHealOnHit = 0.4; // 血性處決單次命中最大回血
+
+// Blood Rage 啟動時的回血倍率
 const bloodRageBloodExecutionHealMultiplier = 2;
 
+// ================================
+// Bone Breaker（R）
+// ================================
 let boneBreakerUnlocked = false;
 let boneBreakerLevel = 0;
 let boneBreakerCooldownTimer = 0;
+
+// 前搖期間暫存施放資料
 let boneBreakerWindupTimer = 0;
 let boneBreakerPending = null;
 
-// 裂骨重擊（R）設定
-const boneBreakerCooldownTime = 10;                 // 基礎冷卻時間
-const boneBreakerMaxLevel = 5;                      // 技能最高等級
-
-// 各等級冷卻時間
+const boneBreakerMaxLevel = 5;
 const boneBreakerCooldownByLevel = [0, 10, 9, 8, 7, 6];
 
-const boneBreakerWindupTime = 0.2;                 // 技能前搖時間
-const boneBreakerMoveMultiplier = 0.45;            // 前搖期間移動速度倍率
-
-const boneBreakerRange = 125;                      // 技能攻擊距離
-const boneBreakerArc = Math.PI * 0.85;             // 扇形攻擊範圍
-
-const boneBreakerDamage = 32;                      // 技能傷害
-const boneBreakerKnockback = 120;                  // 擊退距離
-const boneBreakerStunTime = 1.0;                   // 命中僵直時間
+const boneBreakerWindupTime = 0.2;          // 前搖時間
+const boneBreakerMoveMultiplier = 0.45;     // 前搖期間移動速度倍率
+const boneBreakerRange = 125;               // 攻擊距離
+const boneBreakerArc = Math.PI * 0.85;      // 扇形攻擊角度
+const boneBreakerDamage = 32;               // 技能傷害
+const boneBreakerKnockback = 120;           // 擊退距離
+const boneBreakerStunTime = 1.0;            // 命中僵直時間
 
 function updateAttackCooldownTime() {
     let cooldownTime = baseAttackCooldownTime;
@@ -207,7 +215,7 @@ function activateBloodStep() {
     if (!bloodStepUnlocked) return;
     if (bloodStepCooldownTimer > 0) return;
     if (player.isBound) return;
-    
+
     playdashSound();
 
     const angle =
@@ -323,33 +331,44 @@ function resolveBoneBreaker() {
         playHeavyDamageSound();
         en.hp -= boneBreakerDamage;
         en.hitTimer = 0.16;
-        en.stunTimer = Math.max(en.stunTimer || 0, boneBreakerStunTime);
 
-        const nx = dx / dist;
-        const ny = dy / dist;
+        if (en.type !== 'boss') {
+            // 暈眩敵人
+            en.stunTimer = Math.max(en.stunTimer || 0, boneBreakerStunTime);
+        }
 
-        en.x += nx * boneBreakerKnockback;
-        en.y += ny * boneBreakerKnockback;
+        if (en.type !== 'boss') {
+            // 計算擊退位移
+            const nx = dx / dist;
+            const ny = dy / dist;
 
-        en.x =
-            Math.max(
-                en.radius,
-                Math.min(canvas.width - en.radius, en.x)
-            );
+            en.x += nx * boneBreakerKnockback;
+            en.y += ny * boneBreakerKnockback;
 
-        en.y =
-            Math.max(
-                en.radius,
-                Math.min(canvas.height - en.radius, en.y)
-            );
+            en.x =
+                Math.max(
+                    en.radius,
+                    Math.min(canvas.width - en.radius, en.x)
+                );
+
+            en.y =
+                Math.max(
+                    en.radius,
+                    Math.min(canvas.height - en.radius, en.y)
+                );
+        }
+
 
         if (en.type === 'screamer') {
-            en.fleeTimer = SCREAMER.fleeTime;
+
+            const screamerBase = ENEMY_BASE.screamer;
+
+            en.fleeTimer = screamerBase.fleeTime;
 
             if (en.isScreaming) {
                 en.isScreaming = false;
-                en.screamTimer = SCREAMER.screamChargeTime;
-                en.screamCooldown = SCREAMER.screamCooldown;
+                en.screamTimer = screamerBase.screamChargeTime;
+                en.screamCooldown = screamerBase.screamCooldown;
             }
         }
 

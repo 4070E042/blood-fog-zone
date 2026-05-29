@@ -731,9 +731,6 @@ function drawEnemyHealthBar(en) {
     const barY =
         en.y - en.radius - 12;
 
-    const canOneShot =
-        en.hp <= stickDamage;
-
     ctx.fillStyle = '#333';
 
     ctx.fillRect(
@@ -743,10 +740,7 @@ function drawEnemyHealthBar(en) {
         barHeight
     );
 
-    ctx.fillStyle =
-        canOneShot
-            ? '#fff59d'
-            : '#76ff03';
+    ctx.fillStyle = '#76ff03';
 
     ctx.fillRect(
         barX + 1,

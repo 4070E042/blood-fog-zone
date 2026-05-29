@@ -12,11 +12,65 @@ let isPracticePanelOpen = false;       // 練習選單開啟
 let isPracticeExitMenuOpen = false;    // 練習離開選單開啟
 
 // 練習模式設定
-let practiceSelectedEnemyType = 'normal'; 
+let practiceSelectedEnemyType = 'normal';
 
 // 威脅階段
 let currentThreatPhase = 0;            // 當前威脅階段
 let phaseAlertTimer = 0;               // 階段提示計時
+const THREAT_PHASE = {
+    0: {
+        normalHpBonus: 0,
+        normalSpeedBonus: 0,
+        specialHpBonus: 0,
+        specialSpeedBonus: 0
+    },
+    1: {
+        normalHpBonus: 3,
+        normalSpeedBonus: 4,
+        specialHpBonus: 6,
+        specialSpeedBonus: 3
+    },
+    2: {
+        normalHpBonus: 7,
+        normalSpeedBonus: 8,
+        specialHpBonus: 14,
+        specialSpeedBonus: 6
+    },
+    3: {
+        normalHpBonus: 11,
+        normalSpeedBonus: 12,
+        specialHpBonus: 24,
+        specialSpeedBonus: 9
+    },
+    4: {
+        normalHpBonus: 0,
+        normalSpeedBonus: 0,
+        specialHpBonus: 0,
+        specialSpeedBonus: 0
+    }
+};
+const THREAT_PHASE_ALERTS = {
+    1: {
+        time: 60,
+        title: '感染擴散',
+        message: '跳躍者活動增加，尖叫者開始出現'
+    },
+    2: {
+        time: 150,
+        title: '變異體出現',
+        message: '地洞殭屍開始活動'
+    },
+    3: {
+        time: 240,
+        title: '感染失控',
+        message: '變異體組合壓力上升'
+    },
+    4: {
+        time: 300,
+        title: '大型變異反應',
+        message: 'Boss 即將出現'
+    }
+};
 
 
 const CLASSES = {
@@ -66,6 +120,7 @@ const GAME_BASE = {
     survivalTime: 0,
 }
 
+
 // ================================
 // Boss 固定資料
 // ================================
@@ -85,7 +140,7 @@ const BOSS_STATE = {
 }
 
 const BOSS_BASE = {
-    hp: 600,
+    hp: 800,
     radius: 48,
     speed: 60,
     damage: 20,
@@ -117,8 +172,8 @@ const bossSlamDamage = 54;             // 重擊傷害
 
 // 衝鋒踐踏
 const bossChargeCooldownTime = 12.0;   // 技能冷卻
-const bossChargeWindupTime = 0.8;      // 衝鋒前搖
-const bossChargeDistanceRatio = 0.35;  // 衝鋒距離比例
+const bossChargeWindupTime = 0.6;      // 衝鋒前搖
+const bossChargeDistanceRatio = 0.38;  // 衝鋒距離比例
 const bossChargeSpeed = 340;           // 衝鋒速度
 const bossChargeDamage = 80;           // 衝鋒傷害
 
@@ -147,9 +202,7 @@ function getPurificationRating(duration) {
 // 畫面效果
 let screenShake = 0;
 
-// Combo
-let comboCount = 0;
-let comboTimer = 0;
+
 
 // Build / 技能
 const activeBuilds = [];

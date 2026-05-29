@@ -26,9 +26,16 @@ const ENEMY_BASE = {
 
     screamer: {
         hp: 38,
-        speed: 70,
+        speed: 10,
         radius: 18,
-        spawnCooldown: 60
+        spawnCooldown: 60,
+
+        screamRange: 150,
+        alertRange: 300,
+        screamChargeTime: 1.4,
+        screamCooldown: 14,
+        fleeTime: 1.8,
+        summonCount: 4
     },
 
     burrower: {
@@ -40,22 +47,6 @@ const ENEMY_BASE = {
     }
 };
 
-
-// ================================
-// Screamer 系統
-// ================================
-
-const SCREAMER = {
-    screamRange: 150,
-    alertRange: 260,
-
-    screamChargeTime: 1.4,
-    screamCooldown: 14,
-
-    fleeTime: 1.2,
-
-    summonCount: 4
-};
 
 
 function getEnemyBaseHP() {
@@ -69,36 +60,40 @@ function getEnemyBaseHP() {
 }
 
 function getEnemyHpForType(type) {
-    const baseHp = getEnemyBaseHP();
+    const phase = THREAT_PHASE[currentThreatPhase];
 
-    const normalHp =
-        survivalTime < 30
-            ? baseHp
-            : baseHp + Math.floor(Math.random() * 5) - 2;
+    if (type === 'normal') {
+        const normalHp =
+            currentThreatPhase === 0
+                ? ENEMY_BASE.normal.hp
+                : ENEMY_BASE.normal.hp + Math.floor(Math.random() * 5) - 2;
 
-    return type === 'leaper'
-        ? baseHp + 8 + Math.floor(survivalTime / 90) * 4
-        : type === 'burrower'
-            ? baseHp + 40 + Math.floor(survivalTime / 180) * 5
-            : type === 'screamer'
-                ? baseHp + 28 + Math.floor(survivalTime / 120) * 6
-                : Math.max(8, normalHp);
+        return Math.max(
+            8,
+            normalHp + phase.normalHpBonus
+        );
+    }
+
+    return ENEMY_BASE[type].hp + phase.specialHpBonus;
+}
+
+function getNormalEnemySpeed() {
+    const phase = THREAT_PHASE[currentThreatPhase];
+
+    return Math.min(
+        ENEMY_BASE.normal.speed +
+        Math.random() * 35 +
+        phase.normalSpeedBonus,
+        120
+    );
 }
 
 function getSpecialEnemySpeed(type) {
-    if (type === 'leaper') {
-        return 100 + Math.random() * 20;
-    }
+    const phase = THREAT_PHASE[currentThreatPhase];
 
-    if (type === 'screamer') {
-        return 70 + Math.random() * 20;
-    }
-
-    if (type === 'burrower') {
-        return 80 + Math.random() * 20;
-    }
-
-    return null;
+    return ENEMY_BASE[type].speed +
+        Math.random() * 20 +
+        phase.specialSpeedBonus;
 }
 
 function getEnemyDamage(type) {
@@ -116,6 +111,7 @@ function createEnemy(type, x, y, enemySpeed, enemyHp) {
         type === 'boss'
             ? BOSS_BASE.radius
             : (ENEMY_BASE[type] || ENEMY_BASE.normal).radius;
+
 
     enemies.push({
         id: nextEnemyId++,
@@ -218,7 +214,6 @@ function spawnEnemy(allowSpecial = true) {
     // 生成位置：從畫面四邊出現
     // ================================
     const side = Math.floor(Math.random() * 4);
-
     let x, y;
 
     if (side === 0) {
@@ -235,35 +230,17 @@ function spawnEnemy(allowSpecial = true) {
         y = Math.random() * canvas.height;
     }
 
-
-    // ================================
-    // 普通殭屍速度
-    // ================================
-    const zombieMaxSpeed = 120;
-    const speedBonus = Math.floor(survivalTime / 60) * 4;
-    const normalSpeed = Math.min(55 + Math.random() * 35 + speedBonus, zombieMaxSpeed);
-
-
     // ================================
     // 基礎資料
     // ================================
     const burrowerCount = enemies.filter(e => e.type === 'burrower').length;
     const screamerCount = enemies.filter(e => e.type === 'screamer').length;
 
-
     // ================================
     // 特殊怪生成規則
-    // 前期目標：
-    // 0 ~ 30 秒：只有普通怪，一棒死，給玩家爽感
-    // 30 ~ 90 秒：少量 Leaper 進場，開始逼位
-    // 90 秒後：Screamer 進場，開始製造局勢壓力
-    // Burrower：目前先關閉，之後放到後期
+    // 優先順序：Burrower > Screamer > Leaper > Normal
     // ================================
-
-    const burrowerLimit =
-        survivalTime >= 240
-            ? 2
-            : 1;
+    const burrowerLimit = survivalTime >= 240 ? 2 : 1;
 
     const isBurrower =
         allowSpecial &&
@@ -293,65 +270,44 @@ function spawnEnemy(allowSpecial = true) {
         survivalTime >= 30 &&
         leaperSpawnCooldown <= 0;
 
-
-    // ================================
-    // 決定怪物種類
-    // 優先順序：Burrower > Screamer > Leaper > Normal
-    // ================================
     const type =
         isBurrower ? 'burrower'
             : isScreamer ? 'screamer'
                 : isLeaper ? 'leaper'
                     : 'normal';
 
-
     // ================================
-    // 依怪物種類設定速度
+    // 特殊怪出生冷卻
     // ================================
-    let enemySpeed = normalSpeed;
-
-    switch (type) {
-        case 'leaper':
-            // 前期 Leaper 出現頻率低，避免太早壓力過大
-            if (survivalTime < 60) {
-                leaperSpawnCooldown = 24 + Math.random() * 8;
-            } else if (survivalTime < 150) {
-                leaperSpawnCooldown = 14 + Math.random() * 5;
-            } else if (survivalTime < 240) {
-                leaperSpawnCooldown = 9 + Math.random() * 4;
-            } else {
-                leaperSpawnCooldown = 6 + Math.random() * 3;
-            }
-
-            enemySpeed = getSpecialEnemySpeed(type);
-            break;
-
-        case 'screamer':
-            // Screamer 是局勢怪，不靠速度威脅
-            enemySpeed = getSpecialEnemySpeed(type);
-            break;
-
-        case 'burrower':
-            if (survivalTime < 240) {
-                burrowSpawnCooldown = 55 + Math.random() * 15;
-            } else {
-                burrowSpawnCooldown = 45 + Math.random() * 15;
-            }
-
-            enemySpeed = getSpecialEnemySpeed(type);
-            break;
+    if (type === 'leaper') {
+        if (survivalTime < 60) {
+            leaperSpawnCooldown = 24 + Math.random() * 8;
+        } else if (survivalTime < 150) {
+            leaperSpawnCooldown = 14 + Math.random() * 5;
+        } else if (survivalTime < 240) {
+            leaperSpawnCooldown = 9 + Math.random() * 4;
+        } else {
+            leaperSpawnCooldown = 6 + Math.random() * 3;
+        }
     }
 
+    if (type === 'burrower') {
+        if (survivalTime < 240) {
+            burrowSpawnCooldown = 55 + Math.random() * 15;
+        } else {
+            burrowSpawnCooldown = 45 + Math.random() * 15;
+        }
+    }
 
     // ================================
-    // HP 設定
-    // 0 ~ 30 秒：普通怪固定 10 HP，配合初始傷害 10，一棒死
-    // 30 秒後：普通怪開始有 HP 浮動，可能需要兩下
-    // 特殊怪：比普通怪硬，但不讓前期太誇張
+    // 數值設定
     // ================================
+    const enemySpeed =
+        type === 'normal'
+            ? getNormalEnemySpeed()
+            : getSpecialEnemySpeed(type);
+
     const enemyHp = getEnemyHpForType(type);
-
-
 
     // ================================
     // 建立怪物
