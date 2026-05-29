@@ -34,11 +34,37 @@ const heavyDamageAudio = new Audio('sounds/heavy_damage.mp3');
 // BOSS 音效
 const bossRoarAudio = new Audio('sounds/boss_roar.mp3');
 
+let bgmVolume = 0.4;
+let sfxVolume = 0.6;
+
+function applyBGMVolume() {
+    bgm.volume = bgmVolume;
+    bossBgm.volume = bgmVolume;
+}
+
+function setBGMVolume(value) {
+    bgmVolume = Math.max(0, Math.min(1, Number(value)));
+    applyBGMVolume();
+}
+
+function setSFXVolume(value) {
+    sfxVolume = Math.max(0, Math.min(1, Number(value)));
+}
+
+function playSFX(audio) {
+    audio.volume = sfxVolume;
+    audio.currentTime = 0;
+    audio.play().catch(() => { });
+}
+
+applyBGMVolume();
+
 function playBGM() {
 
     try {
 
         bgm.loop = true;
+        bgm.volume = bgmVolume;
 
         bgm.play().catch(() => { });
 
@@ -62,6 +88,7 @@ function playBossBGM() {
     try {
 
         bossBgm.loop = true;
+        bossBgm.volume = bgmVolume;
 
         bossBgm.play().catch(() => { });
 
@@ -82,10 +109,7 @@ function stopBossBGM() {
 function playBossRoarSound() {
 
     try {
-
-        bossRoarAudio.currentTime = 0;
-
-        bossRoarAudio.play().catch(() => { });
+        playSFX(bossRoarAudio);
 
     } catch (e) { }
 
@@ -94,10 +118,7 @@ function playBossRoarSound() {
 function playLevelUpSound() {
 
     try {
-
-        levelUpAudio.currentTime = 0;
-
-        levelUpAudio.play().catch(() => { });
+        playSFX(levelUpAudio);
 
     } catch (e) { }
 
@@ -112,10 +133,7 @@ function playUIHoverSound(force = false) {
     lastUIHoverSoundTime = now;
 
     try {
-
-        uiHoverAudio.currentTime = 0;
-
-        uiHoverAudio.play().catch(() => { });
+        playSFX(uiHoverAudio);
 
     } catch (e) { }
 
@@ -126,10 +144,7 @@ function playZombieSound() {
     const audio = zombieAudios[Math.floor(Math.random() * zombieAudios.length)];
 
     try {
-
-        audio.currentTime = 0;
-
-        audio.play().catch(() => { });
+        playSFX(audio);
 
     } catch (e) { }
 
@@ -138,21 +153,25 @@ function playZombieSound() {
 function playHitSound() {
 
     try {
-
-        hitAudio.currentTime = 0;
-
-        hitAudio.play().catch(() => { });
+        playSFX(hitAudio);
 
     } catch (e) { }
 
 }
+
+function playSwingSound() {
+
+    try {
+        playSFX(swingAudio);
+
+    } catch (e) { }
+
+}
+
 function playHurtSound() {
 
     try {
-
-        hurtAudio.currentTime = 0;
-
-        hurtAudio.play().catch(() => { });
+        playSFX(hurtAudio);
 
     } catch (e) { }
 
@@ -161,10 +180,7 @@ function playHurtSound() {
 function playDeathSound() {
 
     try {
-
-        deathAudio.currentTime = 0;
-
-        deathAudio.play().catch(() => { });
+        playSFX(deathAudio);
 
     } catch (e) { }
 
@@ -173,10 +189,7 @@ function playDeathSound() {
 function playBurrowSound() {
 
     try {
-
-        burrowAudio.currentTime = 0;
-
-        burrowAudio.play().catch(() => { });
+        playSFX(burrowAudio);
 
     } catch (e) { }
 
@@ -185,10 +198,7 @@ function playBurrowSound() {
 function playScreamSound() {
 
     try {
-
-        screamAudio.currentTime = 0;
-
-        screamAudio.play().catch(() => { });
+        playSFX(screamAudio);
 
     } catch (e) { }
 
@@ -198,10 +208,7 @@ function playScreamSound() {
 function playHealSound() {
 
     try {
-
-        healAudio.currentTime = 0;
-
-        healAudio.play().catch(() => { });
+        playSFX(healAudio);
 
     } catch (e) { }
 
@@ -210,10 +217,7 @@ function playHealSound() {
 function playdashSound() {
 
     try {
-
-        dashAudio.currentTime = 0;
-
-        dashAudio.play().catch(() => { });
+        playSFX(dashAudio);
 
     } catch (e) { }
 
@@ -221,10 +225,7 @@ function playdashSound() {
 function playBloodRageSound() {
 
     try {
-
-        bloodRageAudio.currentTime = 0;
-
-        bloodRageAudio.play().catch(() => { });
+        playSFX(bloodRageAudio);
 
     } catch (e) { }
 
@@ -232,10 +233,7 @@ function playBloodRageSound() {
 function playHeavyCleaveSound() {
 
     try {
-
-        heavyCleaveAudio.currentTime = 0;
-
-        heavyCleaveAudio.play().catch(() => { });
+        playSFX(heavyCleaveAudio);
 
     } catch (e) { }
 
@@ -243,10 +241,7 @@ function playHeavyCleaveSound() {
 function playHeavyDamageSound() {
 
     try {
-
-        heavyDamageAudio.currentTime = 0;
-
-        heavyDamageAudio.play().catch(() => { });
+        playSFX(heavyDamageAudio);
 
     } catch (e) { }
 
@@ -256,10 +251,7 @@ function playHeavyDamageSound() {
 function bossHeavySwingSound() {
 
     try {
-
-        heavy_swingAudio.currentTime = 0;
-
-        heavy_swingAudio.play().catch(() => { });
+        playSFX(heavy_swingAudio);
 
     } catch (e) { }
 
@@ -267,10 +259,7 @@ function bossHeavySwingSound() {
 function playHeavyHurtSound() {
 
     try {
-
-        heavy_hurtAudio.currentTime = 0;
-
-        heavy_hurtAudio.play().catch(() => { });
+        playSFX(heavy_hurtAudio);
 
     } catch (e) { }
 

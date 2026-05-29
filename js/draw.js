@@ -796,6 +796,9 @@ function updateBossIntro(dt) {
 function finishBossIntro() {
     bossIntroActive = false;
     bossFightStarted = true;
+    bossFightStartTime = survivalTime;
+    bossClearTime = null;
+    bossFightDuration = 0;
     bossHealthBarVisible = true;
     bossHealthBarAnim = 0;
 

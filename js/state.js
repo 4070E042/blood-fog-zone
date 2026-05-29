@@ -63,8 +63,7 @@ const CLASSES = {
     }
 };
 const GAME_BASE = {
-    survivalTime: 0,
-    score: 0,
+    survivalTime: 290,
 }
 
 // ================================
@@ -77,6 +76,9 @@ const BOSS_STATE = {
     introTimer: 0,
 
     fightStarted: false,
+    fightStartTime: null,
+    clearTime: null,
+    fightDuration: 0,
 
     healthBarVisible: false,
     healthBarAnim: 0
@@ -98,6 +100,9 @@ let bossSpawned = false;               // Boss 是否已生成
 let bossIntroActive = false;           // Boss 登場動畫中
 let bossIntroTimer = 0;                // Boss 登場計時
 let bossFightStarted = false;          // Boss 戰是否正式開始
+let bossFightStartTime = null;
+let bossClearTime = null;
+let bossFightDuration = 0;
 const bossIntroDuration = 3.0;         // Boss 登場持續時間
 
 // Boss 血條 UI
@@ -106,8 +111,8 @@ let bossHealthBarAnim = 0;             // Boss 血條動畫進度
 // 巨斧重擊
 const bossSlamCooldownTime = 6.0;      // 技能冷卻
 const bossSlamWindupTime = 1.0;        // 前搖時間
-const bossSlamRange = 160;             // 重擊距離
-const bossSlamArc = Math.PI * 1.05;    // 扇形範圍
+const bossSlamRange = 240;             // 重擊距離
+const bossSlamArc = Math.PI * 0.90;    // 扇形範圍
 const bossSlamDamage = 54;             // 重擊傷害
 
 // 衝鋒踐踏
@@ -127,9 +132,17 @@ const bossBasicAttackDamage = BOSS_BASE.damage;
 let playerClass = null;
 
 // 分數 / 時間
-let score = 0;
 let survivalTime = 0;
 let killCount = 0;
+
+function getPurificationRating(duration) {
+    if (duration <= 20) return 'SS';
+    if (duration <= 30) return 'S';
+    if (duration <= 45) return 'A';
+    if (duration <= 60) return 'B';
+    if (duration <= 90) return 'C';
+    return 'D';
+}
 
 // 畫面效果
 let screenShake = 0;
@@ -169,7 +182,7 @@ let enemyAttackRangeOffset = 25;
 // ================================
 
 // 武器數值
-let stickDamage = 10;
+let stickDamage = 300;
 let stickRange = 26;
 
 // 攻擊模式

@@ -16,8 +16,11 @@ const victoryMainButton = document.getElementById('victory-main-button');
 
 const gameOverTime = document.getElementById('game-over-time');
 const gameOverScore = document.getElementById('game-over-score');
+const gameOverLevel = document.getElementById('game-over-level');
 const victoryTime = document.getElementById('victory-time');
+const victoryBossTime = document.getElementById('victory-boss-time');
 const victoryKills = document.getElementById('victory-kills');
+const victoryLevel = document.getElementById('victory-level');
 const victoryScore = document.getElementById('victory-score');
 
 
@@ -26,6 +29,8 @@ const victoryScore = document.getElementById('victory-score');
 // ================================
 const upgradeMenu = document.getElementById('upgrade-menu');
 const pauseMenu = document.getElementById('pause-menu');
+const bgmVolumeSlider = document.getElementById('bgm-volume-slider');
+const sfxVolumeSlider = document.getElementById('sfx-volume-slider');
 const practiceResumeButton = document.getElementById('practice-resume-button');
 const practiceReturnButton = document.getElementById('practice-return-button');
 const phaseAlert = document.getElementById('phase-alert');
@@ -42,7 +47,7 @@ const comboDuration = 4;
 // ================================
 // 測試 / 顯示設定
 // ================================
-let botMode = false;
+let botMode = true;
 let showEnemyHpText = false;
 
 
@@ -86,9 +91,19 @@ function triggerGameOver() {
 
     document.body.classList.remove('game-playing');
 
-    gameOverTime.textContent = `生存時間: ${Math.floor(survivalTime)}s`;
+    if (bossFightStartTime === null) {
+        gameOverTime.textContent = `生存時間: ${Math.floor(survivalTime)}s`;
+        gameOverScore.style.display = 'none';
+    } else {
+        bossFightDuration = Math.max(0, survivalTime - bossFightStartTime);
+        gameOverTime.textContent = '已進入 Boss 戰';
+        gameOverScore.textContent =
+            `Boss 戰耗時: ${Math.floor(bossFightDuration)}s`;
+        gameOverScore.style.display = 'block';
+    }
+
     gameOverKills.textContent = `擊殺數: ${killCount}`;
-    gameOverScore.textContent = `分數: ${score}`;
+    gameOverLevel.textContent = `角色等級: Lv.${player.level}`;
 
     playDeathSound();
 }
@@ -111,7 +126,6 @@ function resetGame() {
     // 分數 / 時間
     // ================================
     survivalTime = GAME_BASE.survivalTime;
-    score = GAME_BASE.score;
     killCount = 0;
 
     player.level = 1;
@@ -137,6 +151,9 @@ function resetGame() {
     bossIntroActive = BOSS_STATE.introActive;
     bossIntroTimer = BOSS_STATE.introTimer;
     bossFightStarted = BOSS_STATE.fightStarted;
+    bossFightStartTime = BOSS_STATE.fightStartTime;
+    bossClearTime = BOSS_STATE.clearTime;
+    bossFightDuration = BOSS_STATE.fightDuration;
     bossHealthBarVisible = BOSS_STATE.healthBarVisible;
     bossHealthBarAnim = BOSS_STATE.healthBarAnim;
 
@@ -322,6 +339,14 @@ practiceStartButton.addEventListener('click', () => {
 startButton.addEventListener('mouseenter', playUIHoverSound);
 practiceStartButton.addEventListener('mouseenter', playUIHoverSound);
 
+bgmVolumeSlider.addEventListener('input', () => {
+    setBGMVolume(bgmVolumeSlider.value);
+});
+
+sfxVolumeSlider.addEventListener('input', () => {
+    setSFXVolume(sfxVolumeSlider.value);
+});
+
 restartButton.addEventListener('click', () => {
     showClassSelect(false);
 });
@@ -354,6 +379,9 @@ practiceReturnButton.addEventListener('click', () => {
     bossIntroActive = false;
     bossIntroTimer = 0;
     bossFightStarted = false;
+    bossFightStartTime = null;
+    bossClearTime = null;
+    bossFightDuration = 0;
     bossHealthBarVisible = false;
     bossHealthBarAnim = 0;
     isPaused = false;
@@ -389,6 +417,9 @@ function returnToMainMenuFromVictory() {
     bossIntroActive = false;
     bossIntroTimer = 0;
     bossFightStarted = false;
+    bossFightStartTime = null;
+    bossClearTime = null;
+    bossFightDuration = 0;
     bossHealthBarVisible = false;
     bossHealthBarAnim = 0;
     gameStarted = false;
@@ -440,10 +471,15 @@ function triggerVictory() {
     isPaused = false;
     isUpgradeActive = false;
 
+    const rating = getPurificationRating(bossFightDuration);
+
     victoryTime.textContent =
-        `Survival Time: ${Math.floor(survivalTime)}s`;
-    victoryKills.textContent = `Kills: ${killCount}`;
-    victoryScore.textContent = `Score: ${score}`;
+        `生存時間: ${Math.floor(survivalTime)}s`;
+    victoryBossTime.textContent =
+        `Boss 戰耗時: ${Math.floor(bossFightDuration)}s`;
+    victoryKills.textContent = `擊殺數: ${killCount}`;
+    victoryLevel.textContent = `角色等級: Lv.${player.level}`;
+    victoryScore.textContent = `淨化評級: ${rating}`;
 
     victoryMenu.style.display = 'flex';
     canvas.style.cursor = 'auto';
@@ -538,6 +574,9 @@ function update(dt) {
         bossIntroActive = true;
         bossIntroTimer = bossIntroDuration;
         bossFightStarted = false;
+        bossFightStartTime = null;
+        bossClearTime = null;
+        bossFightDuration = 0;
         bossHealthBarVisible = false;
         bossHealthBarAnim = 0;
         spawnBoss();
@@ -1326,19 +1365,7 @@ function handleEnemyDeath(en, i) {
         maxLife: 0.35
     });
 
-    const timeBonus =
-        Math.floor(survivalTime / 60) * 2;
-
-    if (en.type === 'leaper') {
-
-        score +=
-            25 + (timeBonus * 2);
-
-    } else if (en.type === 'burrower') {
-
-        score +=
-            45 + (timeBonus * 3);
-
+    if (en.type === 'burrower') {
         burrowSpawnCooldown = 35;
 
         if (
@@ -1349,15 +1376,6 @@ function handleEnemyDeath(en, i) {
             player.boundEnemyId = null;
         }
 
-    } else if (en.type === 'screamer') {
-
-        score +=
-            35 + (timeBonus * 2);
-
-    } else {
-
-        score +=
-            10 + timeBonus;
     }
 
     en.attackState = 'dead';
@@ -1367,6 +1385,11 @@ function handleEnemyDeath(en, i) {
     enemies.splice(i, 1);
 
     if (defeatedBoss && !isPracticeMode) {
+        bossClearTime = survivalTime;
+        bossFightDuration =
+            bossFightStartTime === null
+                ? 0
+                : Math.max(0, bossClearTime - bossFightStartTime);
         bossHealthBarVisible = false;
         bossHealthBarAnim = 0;
         triggerVictory();

@@ -1168,6 +1168,26 @@ canvas {
         0 0 30px rgba(120, 0, 22, 0.16);
 }
 
+.pause-volume-control {
+    display: grid;
+    grid-template-columns: 86px 180px;
+    align-items: center;
+    gap: 12px;
+
+    margin: 12px 0;
+
+    text-align: left;
+}
+
+.pause-volume-control label {
+    font-size: 14px;
+    color: rgba(255, 238, 238, 0.88);
+}
+
+.pause-volume-control input {
+    width: 180px;
+}
+
 #practice-exit-panel {
     padding: 32px 48px;
 

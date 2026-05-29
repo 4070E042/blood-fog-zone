@@ -342,10 +342,7 @@ window.addEventListener('mousedown', (e) => {
         swingHitSet.clear();
         attackCooldown = attackCooldownTime;
 
-        try {
-            swingAudio.currentTime = 0;
-            swingAudio.play().catch(() => { });
-        } catch (e) { }
+        playSwingSound();
     }
 });
 
